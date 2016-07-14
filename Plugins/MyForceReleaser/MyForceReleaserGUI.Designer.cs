@@ -28,14 +28,18 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.btnChangeVersions = new System.Windows.Forms.Button();
             this.dataGridViewProducts = new System.Windows.Forms.DataGridView();
+            this.contextVersionNumbers = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.setAllVersionNumbersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dataGridViewReleases = new System.Windows.Forms.DataGridView();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.btnRelease = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.ValidProductName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.CurrentVersion = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.NewReleaseVersion = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -44,15 +48,19 @@
             this.versionToRelease = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colRelease = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.HiddenTagBased = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.contextCheckAll = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.checkAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.uncheckAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewProducts)).BeginInit();
+            this.contextVersionNumbers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReleases)).BeginInit();
             this.flowLayoutPanel2.SuspendLayout();
+            this.contextCheckAll.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -112,10 +120,24 @@
             this.Release});
             this.dataGridViewProducts.Location = new System.Drawing.Point(0, 0);
             this.dataGridViewProducts.Name = "dataGridViewProducts";
-            this.dataGridViewProducts.ReadOnly = true;
             this.dataGridViewProducts.Size = new System.Drawing.Size(523, 452);
             this.dataGridViewProducts.TabIndex = 1;
             this.dataGridViewProducts.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewProducts_CellContentClick);
+            this.dataGridViewProducts.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewProducts_ColumnHeaderMouseClick);
+            // 
+            // contextVersionNumbers
+            // 
+            this.contextVersionNumbers.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.setAllVersionNumbersToolStripMenuItem});
+            this.contextVersionNumbers.Name = "contextVersionNumbers";
+            this.contextVersionNumbers.Size = new System.Drawing.Size(197, 26);
+            // 
+            // setAllVersionNumbersToolStripMenuItem
+            // 
+            this.setAllVersionNumbersToolStripMenuItem.Name = "setAllVersionNumbersToolStripMenuItem";
+            this.setAllVersionNumbersToolStripMenuItem.Size = new System.Drawing.Size(196, 22);
+            this.setAllVersionNumbersToolStripMenuItem.Text = "Set all version numbers";
+            this.setAllVersionNumbersToolStripMenuItem.Click += new System.EventHandler(this.setAllVersionNumbersToolStripMenuItem_Click);
             // 
             // dataGridViewReleases
             // 
@@ -132,7 +154,6 @@
             this.HiddenTagBased});
             this.dataGridViewReleases.Location = new System.Drawing.Point(3, 0);
             this.dataGridViewReleases.Name = "dataGridViewReleases";
-            this.dataGridViewReleases.ReadOnly = true;
             this.dataGridViewReleases.Size = new System.Drawing.Size(461, 452);
             this.dataGridViewReleases.TabIndex = 1;
             this.dataGridViewReleases.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewReleases_CellContentClick);
@@ -167,6 +188,15 @@
             this.btnSettings.UseVisualStyleBackColor = true;
             this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
             // 
+            // progressBar
+            // 
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.Location = new System.Drawing.Point(94, 3);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(909, 23);
+            this.progressBar.TabIndex = 4;
+            // 
             // ValidProductName
             // 
             this.ValidProductName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
@@ -185,13 +215,11 @@
             // 
             this.NewReleaseVersion.HeaderText = "New Release Version";
             this.NewReleaseVersion.Name = "NewReleaseVersion";
-            this.NewReleaseVersion.ReadOnly = true;
             // 
             // Release
             // 
             this.Release.HeaderText = "Update Versions?";
             this.Release.Name = "Release";
-            this.Release.ReadOnly = true;
             // 
             // productName
             // 
@@ -203,29 +231,39 @@
             // 
             this.versionToRelease.HeaderText = "Version Ready to Release";
             this.versionToRelease.Name = "versionToRelease";
-            this.versionToRelease.ReadOnly = true;
             // 
             // colRelease
             // 
             this.colRelease.HeaderText = "Release?";
             this.colRelease.Name = "colRelease";
-            this.colRelease.ReadOnly = true;
             // 
             // HiddenTagBased
             // 
             this.HiddenTagBased.HeaderText = "HiddenTagBased";
             this.HiddenTagBased.Name = "HiddenTagBased";
-            this.HiddenTagBased.ReadOnly = true;
             this.HiddenTagBased.Visible = false;
             // 
-            // progressBar
+            // contextCheckAll
             // 
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(94, 3);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(909, 23);
-            this.progressBar.TabIndex = 4;
+            this.contextCheckAll.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.checkAllToolStripMenuItem,
+            this.uncheckAllToolStripMenuItem});
+            this.contextCheckAll.Name = "contextCheckAll";
+            this.contextCheckAll.Size = new System.Drawing.Size(153, 70);
+            // 
+            // checkAllToolStripMenuItem
+            // 
+            this.checkAllToolStripMenuItem.Name = "checkAllToolStripMenuItem";
+            this.checkAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.checkAllToolStripMenuItem.Text = "Check all";
+            this.checkAllToolStripMenuItem.Click += new System.EventHandler(this.checkAllToolStripMenuItem_Click);
+            // 
+            // uncheckAllToolStripMenuItem
+            // 
+            this.uncheckAllToolStripMenuItem.Name = "uncheckAllToolStripMenuItem";
+            this.uncheckAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.uncheckAllToolStripMenuItem.Text = "Uncheck all";
+            this.uncheckAllToolStripMenuItem.Click += new System.EventHandler(this.uncheckAllToolStripMenuItem_Click);
             // 
             // MyForceReleaserGUI
             // 
@@ -243,8 +281,10 @@
             this.splitContainer1.ResumeLayout(false);
             this.flowLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewProducts)).EndInit();
+            this.contextVersionNumbers.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReleases)).EndInit();
             this.flowLayoutPanel2.ResumeLayout(false);
+            this.contextCheckAll.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -259,6 +299,9 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.Button btnRelease;
         private System.Windows.Forms.Button btnSettings;
+        private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.ContextMenuStrip contextVersionNumbers;
+        private System.Windows.Forms.ToolStripMenuItem setAllVersionNumbersToolStripMenuItem;
         private System.Windows.Forms.DataGridViewTextBoxColumn ValidProductName;
         private System.Windows.Forms.DataGridViewTextBoxColumn CurrentVersion;
         private System.Windows.Forms.DataGridViewTextBoxColumn NewReleaseVersion;
@@ -267,7 +310,9 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn versionToRelease;
         private System.Windows.Forms.DataGridViewCheckBoxColumn colRelease;
         private System.Windows.Forms.DataGridViewCheckBoxColumn HiddenTagBased;
-        private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.ContextMenuStrip contextCheckAll;
+        private System.Windows.Forms.ToolStripMenuItem checkAllToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem uncheckAllToolStripMenuItem;
 
     }
 }

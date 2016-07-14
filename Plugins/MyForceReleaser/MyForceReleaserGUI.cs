@@ -80,13 +80,13 @@ namespace MyForceReleaser
             foreach (var ProductName in ValidProducts[repoName])
             {
                 bool bRetrievedFromTag = false;
-                string strCurrentVersion = "not defined";
-                string strNextVersion = "not defined";
+                Dictionary<string, string> dicTrackMaxVersion = new Dictionary<string, string>();
 
                 //Check if there are any regular resource files where we can get versions from
                 if (dicResourceFiles.ContainsKey(ProductName) && dicResourceFiles[ProductName].Count > 0)
                 {
                     string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicResourceFiles[ProductName][0]);
+                    string strCurrentVersion = "";
                     if (FilePath.ToLower().EndsWith(".rc"))
                     {
                         //Parse from cpp file
@@ -94,7 +94,8 @@ namespace MyForceReleaser
                     } else {
                         //Parse from assembly info
                         strCurrentVersion = StaticTools.FindInFile(FilePath, "\\[assembly:\\s+AssemblyVersion\\(\"([^\"\\*]*)\"\\)\\]", 1);
-                    }                    
+                    }
+                    dicTrackMaxVersion.Add(StaticTools.GetMainTrackVersionNumber(strCurrentVersion), strCurrentVersion);
                 }
                 else
                 {
@@ -102,7 +103,8 @@ namespace MyForceReleaser
                     if (dicSqlFiles.ContainsKey(ProductName))
                     {
                         string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicSqlFiles[ProductName][0]);
-                        strCurrentVersion = StaticTools.FindInFile(FilePath, @"((?:\d+\.){3}\d+)", 1).Replace(',', '.');
+                        string strCurrentVersion = StaticTools.FindInFile(FilePath, @"((?:\d+\.){3}\d+)", 1).Replace(',', '.');
+                        dicTrackMaxVersion.Add(StaticTools.GetMainTrackVersionNumber(strCurrentVersion), strCurrentVersion);
                     }
                     else
                     {
@@ -111,9 +113,19 @@ namespace MyForceReleaser
                         string strRemoteBranch = MyForceReleaser.GetRemoteBranchName(_Model);
                         if (!string.IsNullOrWhiteSpace(strRemoteBranch))
                         {
-                            //Parse version from the current branch
-                            string strRemoteVersion = strRemoteBranch.Replace("Version-", "");
-                            var matches = Regex.Matches(strAllTags, "refs/tags/" + ProductName + "-v?(" + strRemoteVersion + @".\d+)\^{}");
+                            //Parse version from the current branch                            
+                            bool bSpecificVersionFound = strRemoteBranch.Contains("Version-");
+                            string strRemoteVersion = "";
+                            if (bSpecificVersionFound)
+                                strRemoteVersion = strRemoteBranch.Replace("Version-", "") + ".";
+                            else
+                                strRemoteVersion = @"(?:\d+.)+";
+
+                            //If we don't have a specific version warn the user we aren't working on specific version!
+                            if (!bSpecificVersionFound)
+                                MessageBox.Show("No version found for product <" + ProductName + "> for branch <" + strRemoteBranch + ">! Please be sure this is intended!");
+                            
+                            var matches = Regex.Matches(strAllTags, "refs/tags/" + ProductName + "-v?(" + strRemoteVersion + @"\d+)\^{}");
                             foreach (Match tagmatch in matches)
                             {
                                 string strCurrentTagMatch = "";
@@ -122,30 +134,43 @@ namespace MyForceReleaser
 
                                 if (StaticTools.IsValidVersionNumber(strCurrentTagMatch))
                                 {
-                                    if (strCurrentVersion == "not defined" || StaticTools.CompareFileVersions(strCurrentVersion, strCurrentTagMatch) < 0)
-                                        strCurrentVersion = strCurrentTagMatch;
+                                    //Extract the track
+                                    string strTrack = StaticTools.GetMainTrackVersionNumber(strCurrentTagMatch);
+                                    if (!dicTrackMaxVersion.ContainsKey(strTrack))
+                                        dicTrackMaxVersion.Add(strTrack, strCurrentTagMatch);
+                                    else if (StaticTools.CompareFileVersions(dicTrackMaxVersion[strTrack], strCurrentTagMatch) < 0)
+                                        dicTrackMaxVersion[strTrack] = strCurrentTagMatch;
                                 }
                             }
                         }
                     }
                 }
 
-                //Increment the next version number
-                if (StaticTools.IsValidVersionNumber(strCurrentVersion))
+                bool bReleaseAbleProductsFound = false;
+                foreach (var strActualVersion in dicTrackMaxVersion)
                 {
-                    strNextVersion = StaticTools.IncrementVersionNumber(strCurrentVersion);
+                    //Increment the next version number
+                    string versionNumber = strActualVersion.Value;
+                    if (StaticTools.IsValidVersionNumber(versionNumber))
+                    {
+                        bReleaseAbleProductsFound = true;
+                        string strNextVersion = StaticTools.IncrementVersionNumber(versionNumber);
 
-                    //Verify if the tag already exists => if not this product is ready to release
-                    if (bRetrievedFromTag || !Regex.Match(strAllTags, "refs/tags/" + ProductName + "-v?" + strCurrentVersion + @"\^{}").Success)
-                        dataGridViewReleases.Rows.Add(ProductName, bRetrievedFromTag ? strNextVersion : strCurrentVersion, !bRetrievedFromTag, bRetrievedFromTag);
-                    else
-                        dataGridViewProducts.Rows.Add(ProductName, strCurrentVersion, strNextVersion, false);
-                }
-                else
-                    MessageBox.Show("Couldn't determine any version for " + ProductName + ". Releasing will work but not for this product!");
+                        //Verify if the tag already exists => if not this product is ready to release
+                        if (bRetrievedFromTag || !Regex.Match(strAllTags, "refs/tags/" + ProductName + "-v?" + versionNumber + @"\^{}").Success)
+                            dataGridViewReleases.Rows.Add(ProductName, bRetrievedFromTag ? strNextVersion : versionNumber, !bRetrievedFromTag, bRetrievedFromTag);
+                        else
+                            dataGridViewProducts.Rows.Add(ProductName, versionNumber, strNextVersion, false);
+                    }                        
+                } 
+
+                //Warn the user not any version could be parsed
+                if (!bReleaseAbleProductsFound)
+                    MessageBox.Show("Couldn't determine any version for <" + ProductName + ">. Releasing will work but not for this product!");
             }
         }
 
+        //Data grid view events
         private void dataGridViewProducts_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.ColumnIndex == 3 && e.RowIndex >= 0)
@@ -157,7 +182,6 @@ namespace MyForceReleaser
                 cell.Value = !(bool)cell.Value;
             }
         }
-
         private void dataGridViewReleases_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.ColumnIndex == 2 && e.RowIndex >= 0)
@@ -169,9 +193,47 @@ namespace MyForceReleaser
                 cell.Value = !(bool)cell.Value;
             }
         }
+        private void dataGridViewProducts_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            switch (e.ColumnIndex)
+            {
+                case 2:
+                    if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                        contextVersionNumbers.Show(Cursor.Position);
+                    break;
+                case 3:
+                    if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                        contextCheckAll.Show(Cursor.Position);
+                    break;
+                default:
+                    break;
+            }
+        }
 
+        //Actions
+        private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, int nColumnIndexVersionToCheck, int nColumnIndexRowIdentifier = 0)
+        {
+            if (nColumnIndexVersionToCheck < 0 || nColumnIndexVersionToCheck > gridView.ColumnCount
+                || nColumnIndexRowIdentifier < 0 || nColumnIndexRowIdentifier > gridView.ColumnCount)
+                return false; //During testing this won't even work so should never get released. Hence no warning!
+
+            bool bValid = true;
+            int nRowIndex = gridView.Rows.Count;
+            while (bValid && --nRowIndex >= 0)
+                bValid = StaticTools.IsValidVersionNumber(gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString());
+
+            if (!bValid && nRowIndex >= 0 && nRowIndex < gridView.Rows.Count)
+            {
+                MessageBox.Show("Invalid version number <" + gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString() 
+                    + "> found for <" + gridView[nColumnIndexRowIdentifier, nRowIndex].Value.ToString() + ">!");
+            }
+            return bValid;
+        }
         private void UpdateVersionNumbers_Click(object sender, EventArgs e)
         {
+            if (!ValidateVersionNumbersInColumn(ref dataGridViewProducts, 2))
+                return;
+
             bool ProductsFoundToRelease = false;
 
             //Load the resource files for each valid product
@@ -243,10 +305,12 @@ namespace MyForceReleaser
             //Close the GUI so user can verify his actions
             Close();
         }
-
         private void ReleasePrograms_Click(object sender, EventArgs e)
         {
-            bool ProductsFoundToRelease = false;           
+            bool ProductsFoundToRelease = false;
+
+            if (!ValidateVersionNumbersInColumn(ref dataGridViewReleases, 1))
+                return;
 
             //Change all version numbers
             //bool DoDummyCommitSinceOnlyTagBasedRelease = true;
@@ -330,6 +394,7 @@ namespace MyForceReleaser
             Close();
         }
 
+        //Regulate settings
         private void btnSettings_Click(object sender, EventArgs e)
         {
             MyForceReleaserGUISettings settings = new MyForceReleaserGUISettings();
@@ -341,6 +406,45 @@ namespace MyForceReleaser
                 _Model.InteralRepositoryPath = settings.InternalRepoPath;
                 LoadProducts();
             }
-        }        
+        }
+
+        //context menu's
+        private void setAllVersionNumbersToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            bool bDone = true;
+            string strVersionToSet = "";
+            Point p = new Point(Cursor.Position.X, Cursor.Position.Y);
+            do
+            {
+                bDone = true;
+                InputBoxResult dlg = InputBox.Show("Please provide a version to set on all projects: ", "Version to set?", "X.X.X.X", p.X, p.Y);
+                if (dlg.ReturnCode == System.Windows.Forms.DialogResult.OK)
+                {
+                    if (!StaticTools.IsValidVersionNumber(dlg.Text))
+                    {
+                        MessageBox.Show("Invalid version number! Please respect the format: X.X.X.X where (X = digits)!");
+                        bDone = false;
+                    }
+                    else
+                        strVersionToSet = dlg.Text;
+                }
+            } while (!bDone);
+            
+            if (!string.IsNullOrWhiteSpace(strVersionToSet))
+            {
+                for (int index = 0; index < dataGridViewProducts.Rows.Count; index++)
+                    dataGridViewProducts[2, index].Value = strVersionToSet;
+            }
+        }
+        private void checkAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            for (int nIndex = 0; nIndex < dataGridViewProducts.Rows.Count; nIndex++)
+                dataGridViewProducts[3, nIndex].Value = true;
+        }
+        private void uncheckAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            for (int nIndex = 0; nIndex < dataGridViewProducts.Rows.Count; nIndex++)
+                dataGridViewProducts[3, nIndex].Value = false;
+        }      
     }
 }

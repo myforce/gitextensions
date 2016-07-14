@@ -56,6 +56,13 @@ namespace MyForceReleaser
             }
 
             MyForceReleaser Model = new MyForceReleaser(pathToInternalRepo, new MyForceGitExtensions(eventArgs.GitModule));
+            strFileCheckErrors = "";
+            if (!Model.Validate(ref strFileCheckErrors))
+            {
+                MessageBox.Show(ownerForm, string.Format("This plugin can't run with the current config! Errors:\n{0}", strFileCheckErrors), _myforcereleaser.Text, MessageBoxButtons.OK);
+                return false;
+            }
+
             using (var releaserStart = new MyForceReleaserGUI(Model))
             {
                 releaserStart.ShowDialog(ownerForm);

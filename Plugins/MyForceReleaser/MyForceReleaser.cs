@@ -4,6 +4,7 @@ using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MyForceReleaser
 {
@@ -16,6 +17,33 @@ namespace MyForceReleaser
         {
             InteralRepositoryPath = InternalRepositoryPath;
             Git = GitModule;
+        }
+
+        public bool Validate(ref string strErrors)
+        {
+            bool bGood = true;
+            string strGitVersionString = Git.RunGitCmd("--version");
+            
+            Regex regex = new Regex(@"((?:\d+.)+\d+).windows");
+            Match match = regex.Match(strGitVersionString);
+            bGood = match.Success && match.Groups.Count >= 2;
+            if (bGood)
+            {
+                strGitVersionString = match.Groups[1].Value;
+                bGood = StaticTools.IsValidVersionNumber(strGitVersionString); 
+                if (bGood)
+                {
+                    bGood = StaticTools.CompareFileVersions(strGitVersionString, "2.8.2") <= 0; // A <= B
+                    if (!bGood)
+                        strErrors = string.Format("Required git version <2.8.2>. Current version: <{0}>", strGitVersionString); 
+                }
+                else
+                    strErrors = string.Format("Unable to parse git version! Version is not a valid version number: <{0}>", strGitVersionString);
+            }
+            else
+                strErrors = string.Format("Unable to parse git version from <{0}>", strGitVersionString);
+                
+            return bGood;
         }
 
         #region Files
