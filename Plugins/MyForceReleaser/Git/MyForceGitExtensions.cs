@@ -15,6 +15,11 @@ namespace MyForceReleaser
             _Git = GitModule;
         }
 
+        public string GetCurrentBranchName()
+        {
+            return _Git.GetSelectedBranch();
+        }
+
         public string GetWorkingDir()
         {
             return _Git.WorkingDir;
