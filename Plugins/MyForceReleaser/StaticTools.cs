@@ -301,6 +301,53 @@ namespace MyForceReleaser
                 }
             }
         }
+
+        public static string Serialize<T>(T value)
+        {
+
+            if (value == null)
+            {
+                return null;
+            }
+
+            System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(typeof(T));
+
+            System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
+            settings.Encoding = new UnicodeEncoding(false, false); // no BOM in a .NET string
+            settings.Indent = false;
+            settings.OmitXmlDeclaration = false;
+
+            using (StringWriter textWriter = new StringWriter())
+            {
+                using (System.Xml.XmlWriter xmlWriter = System.Xml.XmlWriter.Create(textWriter, settings))
+                {
+                    serializer.Serialize(xmlWriter, value);
+                }
+                return textWriter.ToString();
+            }
+        }
+
+        public static T Deserialize<T>(string xml)
+        {
+
+            if (string.IsNullOrEmpty(xml))
+            {
+                return default(T);
+            }
+
+            System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(typeof(T));
+
+            System.Xml.XmlReaderSettings settings = new System.Xml.XmlReaderSettings();
+            // No settings need modifying here
+
+            using (StringReader textReader = new StringReader(xml))
+            {
+                using (System.Xml.XmlReader xmlReader = System.Xml.XmlReader.Create(textReader, settings))
+                {
+                    return (T)serializer.Deserialize(xmlReader);
+                }
+            }
+        }
         #endregion
 
         #region CommandLine

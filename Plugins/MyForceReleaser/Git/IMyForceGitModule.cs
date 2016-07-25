@@ -7,6 +7,7 @@ namespace MyForceReleaser
 {
     public interface IMyForceGitModule
     {
+        string GetCurrentBranchName();
         string GetWorkingDir();
         string RunGitCmd(string strCMD);
     }

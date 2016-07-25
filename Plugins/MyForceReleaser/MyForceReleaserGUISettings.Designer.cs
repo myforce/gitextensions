@@ -49,13 +49,13 @@
             this.txtInternalRepoPath.Location = new System.Drawing.Point(115, 10);
             this.txtInternalRepoPath.Name = "txtInternalRepoPath";
             this.txtInternalRepoPath.ReadOnly = true;
-            this.txtInternalRepoPath.Size = new System.Drawing.Size(294, 20);
+            this.txtInternalRepoPath.Size = new System.Drawing.Size(372, 20);
             this.txtInternalRepoPath.TabIndex = 1;
             // 
             // btnSelectInternalRepo
             // 
             this.btnSelectInternalRepo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSelectInternalRepo.Location = new System.Drawing.Point(415, 8);
+            this.btnSelectInternalRepo.Location = new System.Drawing.Point(493, 8);
             this.btnSelectInternalRepo.Name = "btnSelectInternalRepo";
             this.btnSelectInternalRepo.Size = new System.Drawing.Size(30, 23);
             this.btnSelectInternalRepo.TabIndex = 2;
@@ -67,7 +67,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(457, 44);
+            this.ClientSize = new System.Drawing.Size(535, 45);
             this.Controls.Add(this.btnSelectInternalRepo);
             this.Controls.Add(this.txtInternalRepoPath);
             this.Controls.Add(this.lblInternalRepoPath);

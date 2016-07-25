@@ -21,7 +21,8 @@ namespace MyForceReleaser
         #endregion
 
         #region Settings
-        private StringSetting InternalRepoPath = new StringSetting("Path to internal repository", "");
+        private StringSetting settingInternalRepoPath = new StringSetting("Path to internal repository", "");
+        private StringSetting settingCommitMessageIgnoreRegexes = new StringSetting("Commit message ignore regexes", "");
         #endregion
 
         public MyForceReleaserPlugin()
@@ -39,7 +40,7 @@ namespace MyForceReleaser
                 return false;
             }
 
-            var pathToInternalRepo = InternalRepoPath[Settings];
+            var pathToInternalRepo = settingInternalRepoPath[Settings];
 
             string strFileCheckErrors = "";
             while (!MyForceReleaser.AllInternalFilesArePresent(pathToInternalRepo, eventArgs.GitModule.WorkingDir, ref strFileCheckErrors))
@@ -51,11 +52,12 @@ namespace MyForceReleaser
                 dlgSelectFolder.SelectedPath = pathToInternalRepo;
                 dlgSelectFolder.ShowDialog();
 
-                
                 pathToInternalRepo = dlgSelectFolder.SelectedPath;
             }
 
             MyForceReleaser Model = new MyForceReleaser(pathToInternalRepo, new MyForceGitExtensions(eventArgs.GitModule));
+            Model.CommitMessageIgnoreRegexes = StaticTools.Deserialize<List<string>>(settingCommitMessageIgnoreRegexes[Settings]);
+
             strFileCheckErrors = "";
             if (!Model.Validate(ref strFileCheckErrors))
             {
@@ -67,7 +69,9 @@ namespace MyForceReleaser
             {
                 releaserStart.ShowDialog(ownerForm);
             }
-            Settings.SetValue<string>(InternalRepoPath.Name, Model.InteralRepositoryPath, s => s);
+
+            Settings.SetValue<string>(settingInternalRepoPath.Name, Model.InternalRepositoryPath, s => s);
+            Settings.SetValue<string>(settingCommitMessageIgnoreRegexes.Name, StaticTools.Serialize<List<string>>(Model.CommitMessageIgnoreRegexes), s => s);
             return true;
         }        
     }
