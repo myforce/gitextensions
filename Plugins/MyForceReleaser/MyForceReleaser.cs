@@ -69,7 +69,7 @@ namespace MyForceReleaser
             string strToReturn = null;
             strProduct = GetVersionHistoryFilePathForProduct(_Model, strProduct, strRequestedTrack);
             if (System.IO.File.Exists(strProduct))
-                strToReturn = System.IO.File.ReadAllText(strProduct);
+                strToReturn = System.IO.File.ReadAllText(strProduct).Replace("\r", "");
             return strToReturn;
         }
         public static void SaveVersionHistoryFile(MyForceReleaser _Model, string strProduct, string strRequestedTrack, string strCurrentText)
