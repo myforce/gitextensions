@@ -51,7 +51,7 @@ namespace MyForceReleaser
                 bGood = StaticTools.IsValidVersionNumber(strGitVersionString); 
                 if (bGood)
                 {
-                    bGood = StaticTools.CompareFileVersions(strGitVersionString, "2.8.2") <= 0; // A <= B
+                    bGood = StaticTools.CompareFileVersions("2.8.2", strGitVersionString) <= 0; // A <= B
                     if (!bGood)
                         strErrors = string.Format("Required git version <2.8.2>. Current version: <{0}>", strGitVersionString); 
                 }
