@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace MyForceReleaser
 {
+
     public class MyForceReleaser
     {
         public string InternalRepositoryPath { get; set; }
@@ -213,7 +214,7 @@ namespace MyForceReleaser
             // Check the release repo is valid
             if (string.IsNullOrEmpty(strToReleaseRepo) || !System.IO.Directory.Exists(strToReleaseRepo))
             {
-                strErrors = string.Format("Repository that should be released cannot be found! Location checked: <{0}>", strToReleaseRepo);
+                strErrors = string.Format("No repository openend, please open an repository first! Location checked: <{0}>", strToReleaseRepo);
                 return false;
             }
 

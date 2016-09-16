@@ -7,6 +7,61 @@ using System.Threading.Tasks;
 
 namespace MyForceReleaser
 {
+    #region Logging
+    public class Logger
+    {
+        public enum LogType { lt_info, lt_warning, lt_error }
+        private static Logger _myInstance = new Logger();
+        private StringBuilder _ErrorLog;
+
+        private Logger()
+        {
+            _ErrorLog = new StringBuilder();
+        }
+
+        public static Logger GetLogger()
+        {
+            return _myInstance;
+        }
+
+        public void LogMessage(string strToLog, LogType lt = lt_info, int nLevel = 0)
+        {
+            string strType;
+            switch (lt)
+            {
+                case LogType.lt_warning:
+                    strType = "WARNING";
+                    break;
+                case LogType.lt_error:
+                    strType = "ERROR";
+                    break;
+                case LogType.lt_info:
+                default:
+                    strType = "INFO";
+                    break;
+            }
+
+            _ErrorLog.AppendFormat("{0,-12}{1,-10}L{2,-2} {3}"
+                , DateTime.Now.ToString("hh:mm:ss")
+                , strType
+                , nLevel
+                , strToLog
+                );
+        }
+
+        public string GetLog()
+        {
+            return _ErrorLog.ToString();
+        }
+
+        public void Clear()
+        {
+            _ErrorLog.Clear();
+        }
+
+    }
+    #endregion
+
     public static class StaticTools
     {
         #region FileManipulations
