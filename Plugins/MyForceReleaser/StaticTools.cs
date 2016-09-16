@@ -24,7 +24,7 @@ namespace MyForceReleaser
             return _myInstance;
         }
 
-        public void LogMessage(string strToLog, LogType lt = lt_info, int nLevel = 0)
+        public void LogMessage(string strToLog, LogType lt = LogType.lt_info, int nLevel = 0)
         {
             string strType;
             switch (lt)
