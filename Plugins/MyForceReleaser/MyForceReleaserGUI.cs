@@ -153,7 +153,7 @@ namespace MyForceReleaser
                 if ((bool)dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, RowIndex].Value)
                 {
                     nProductsFoundToRelease++;
-                    Command cmd = new Command(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]));
+                    Command cmd = new Command("& \"" + System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]) + "\"");
                     cmd.Parameters.Add("Directory", _Model.Git.GetWorkingDir().TrimEnd('\\'));
                     cmd.Parameters.Add("Version", strVersionToSet);
                     cmd.Parameters.Add("DisableChecks", true);
@@ -677,12 +677,12 @@ namespace MyForceReleaser
                     //    DoDummyCommitSinceOnlyTagBasedRelease = false; //We have program that actually has changed resources
                     ProductsFoundToRelease = true;
 
-                    Command cmdTag = new Command(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
+                    Command cmdTag = new Command(System.IO.Path.Combine("& \"" + _Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]) + "\"");
                     cmdTag.Parameters.Add("ProductNames", strProduct);
                     cmdTag.Parameters.Add("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
                     lstToExecute.Add(cmdTag);
 
-                    Command cmdPush = new Command(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
+                    Command cmdPush = new Command(System.IO.Path.Combine("& \"" + _Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]) + "\"");
                     cmdPush.Parameters.Add("ProductNames", strProduct);
                     cmdPush.Parameters.Add("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
                     cmdPush.Parameters.Add("Push", true);

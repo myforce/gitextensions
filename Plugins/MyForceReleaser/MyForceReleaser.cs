@@ -314,7 +314,7 @@ namespace MyForceReleaser
                 string cmd = System.IO.Path.Combine(_Model.InternalRepositoryPath, FILELIST_INTERNAL[FILE_INTERNAL_VALIDPRODUCTS]);
                 if (System.IO.File.Exists(cmd))
                 {
-                    pipeline.Commands.AddScript(cmd);
+                    pipeline.Commands.AddScript("& \"" + cmd + "\"");
                     ICollection<PSObject> collection = pipeline.Invoke();
 
                     System.Collections.Hashtable psValidProducts = (System.Collections.Hashtable)runspace.SessionStateProxy.GetVariable("global:ValidProducts");
