@@ -247,7 +247,7 @@ namespace MyForceReleaser
                 string cmd = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), FILELIST_REPO[FILE_REPO_MAPPRODUCTNAMESTORESOURCEFILES]);
                 if (System.IO.File.Exists(cmd))
                 {
-                    pipeline.Commands.AddScript(cmd);
+                    pipeline.Commands.AddScript("& \"" + cmd + "\"");
                     ICollection<PSObject> collection = pipeline.Invoke();
 
                     //Load the resource files for each product
