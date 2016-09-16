@@ -764,6 +764,8 @@ namespace MyForceReleaser
         #region Shared Tab Logic
         public void LoadProducts()
         {
+            dataGridViewProducts.SelectionChanged -= dataGridViewProducts_SelectionChanged;
+
             //Clear the current products
             dataGridViewProducts.Rows.Clear();
             dataGridViewReleases.Rows.Clear();
@@ -821,6 +823,7 @@ namespace MyForceReleaser
                         MessageBox.Show("Couldn't determine any version for <" + ProductName + ">. Releasing will work but not for this product!");
                 }
             }
+            dataGridViewProducts.SelectionChanged += dataGridViewProducts_SelectionChanged;
             SyncVersionHistory();
         }
         private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, int nColumnIndexVersionToCheck, int nColumnIndexRowIdentifier = 0)
