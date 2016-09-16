@@ -185,7 +185,7 @@ namespace MyForceReleaser
                     if (DialogResult.Yes == MessageBox.Show(strMessage, "Commit version history ?", MessageBoxButtons.YesNo))
                     {
                         //Commit the changes
-                        _Model.Git.RunGitCmd(string.Format("add {0}/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
+                        _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
                         _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version history files\"");
                         
                     }
@@ -223,7 +223,7 @@ namespace MyForceReleaser
             finally { runspace.Close(); }
 
             //Commit the changes
-            _Model.Git.RunGitCmd(string.Format("add {0}/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
+            _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
             _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version numbers for release\"");
 
             MessageBox.Show(string.Format("{0}/{1} program versions are updated. Please verify them and then re-open this plugin to actually release the programs!", nProductsFoundToRelease, dataGridViewProducts.Rows.Count));
@@ -311,7 +311,7 @@ namespace MyForceReleaser
                     if (MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack))
                     {
                         //We have a version file => check if the history file was changed since last tag                    
-                        string strOutput = _Model.Git.RunGitCmd(string.Format("diff {0}-{1} HEAD -- {2}", strProductName, dataGridViewProducts[PRODUCTS_COL_CURRENTVERSION, nRowIndex].Value, MyForceReleaser.GetVersionHistoryRelativeFilePathForProduct(strProductName, strTrack)));
+                        string strOutput = _Model.Git.RunGitCmd(string.Format("diff {0}-{1} HEAD -- \"{2}\"", strProductName, dataGridViewProducts[PRODUCTS_COL_CURRENTVERSION, nRowIndex].Value, MyForceReleaser.GetVersionHistoryRelativeFilePathForProduct(strProductName, strTrack)));
                         if (string.IsNullOrWhiteSpace(strOutput))
                             dataGridViewProducts.Rows[nRowIndex].DefaultCellStyle.BackColor = Color.Orange; //No changes since last tag
                         else
