@@ -46,14 +46,22 @@
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.btnRelease = new System.Windows.Forms.Button();
             this.tabVersions = new System.Windows.Forms.TabPage();
-            this.splitVersionsAndHistory = new System.Windows.Forms.SplitContainer();
             this.dataGridViewProducts = new System.Windows.Forms.DataGridView();
             this.colProduct = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCurrentVersion = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colVersionToSet = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colUpdateVersion = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.colVersionHistoryUpdated = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colInternalVersionHistory = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnChangeVersions = new System.Windows.Forms.Button();
+            this.tabMainWindow = new System.Windows.Forms.TabControl();
+            this.tabVersionHistory = new System.Windows.Forms.TabPage();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.dataGridViewVersionHist = new System.Windows.Forms.DataGridView();
+            this.colVHProduct = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVHCurrentVersion = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVHVersionHistoryUpdated = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVHInternalVersionHistory = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.splitHistoryInfoWithVersionHistory = new System.Windows.Forms.SplitContainer();
             this.splitCommitMessagesWithPrevHist = new System.Windows.Forms.SplitContainer();
             this.grpBoxCommitMessages = new System.Windows.Forms.GroupBox();
@@ -65,25 +73,28 @@
             this.txtPreviousVersionHistory = new System.Windows.Forms.RichTextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.txtCurVersionHistory = new System.Windows.Forms.RichTextBox();
-            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
-            this.btnChangeVersions = new System.Windows.Forms.Button();
-            this.tabMainWindow = new System.Windows.Forms.TabControl();
             this.contextVersionHistory = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.generateMissingFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetVersionFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
+            this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnUpdateVersionHistory = new System.Windows.Forms.Button();
             this.contextVersionToSet.SuspendLayout();
             this.contextShouldUpdateVersions.SuspendLayout();
             this.tabReleasing.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReleases)).BeginInit();
             this.flowLayoutPanel2.SuspendLayout();
             this.tabVersions.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitVersionsAndHistory)).BeginInit();
-            this.splitVersionsAndHistory.Panel1.SuspendLayout();
-            this.splitVersionsAndHistory.Panel2.SuspendLayout();
-            this.splitVersionsAndHistory.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewProducts)).BeginInit();
+            this.flowLayoutPanel1.SuspendLayout();
+            this.tabMainWindow.SuspendLayout();
+            this.tabVersionHistory.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewVersionHist)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitHistoryInfoWithVersionHistory)).BeginInit();
             this.splitHistoryInfoWithVersionHistory.Panel1.SuspendLayout();
             this.splitHistoryInfoWithVersionHistory.Panel2.SuspendLayout();
@@ -95,10 +106,9 @@
             this.grpBoxCommitMessages.SuspendLayout();
             this.grpPreviousVersionHist.SuspendLayout();
             this.groupBox2.SuspendLayout();
-            this.flowLayoutPanel1.SuspendLayout();
-            this.tabMainWindow.SuspendLayout();
             this.contextVersionHistory.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
+            this.flowLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // contextVersionToSet
@@ -106,12 +116,12 @@
             this.contextVersionToSet.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.setAllVersionNumbersToolStripMenuItem});
             this.contextVersionToSet.Name = "contextVersionNumbers";
-            this.contextVersionToSet.Size = new System.Drawing.Size(197, 26);
+            this.contextVersionToSet.Size = new System.Drawing.Size(186, 26);
             // 
             // setAllVersionNumbersToolStripMenuItem
             // 
             this.setAllVersionNumbersToolStripMenuItem.Name = "setAllVersionNumbersToolStripMenuItem";
-            this.setAllVersionNumbersToolStripMenuItem.Size = new System.Drawing.Size(196, 22);
+            this.setAllVersionNumbersToolStripMenuItem.Size = new System.Drawing.Size(185, 22);
             this.setAllVersionNumbersToolStripMenuItem.Text = "Set all version numbers";
             this.setAllVersionNumbersToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionToSet_SetAllVersionNumbers_Click);
             // 
@@ -140,19 +150,19 @@
             this.checkAllToolStripMenuItem,
             this.uncheckAllToolStripMenuItem});
             this.contextShouldUpdateVersions.Name = "contextCheckAll";
-            this.contextShouldUpdateVersions.Size = new System.Drawing.Size(136, 48);
+            this.contextShouldUpdateVersions.Size = new System.Drawing.Size(128, 48);
             // 
             // checkAllToolStripMenuItem
             // 
             this.checkAllToolStripMenuItem.Name = "checkAllToolStripMenuItem";
-            this.checkAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
+            this.checkAllToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
             this.checkAllToolStripMenuItem.Text = "Check all";
             this.checkAllToolStripMenuItem.Click += new System.EventHandler(this.ContextUpdateVersion_CheckAll_Click);
             // 
             // uncheckAllToolStripMenuItem
             // 
             this.uncheckAllToolStripMenuItem.Name = "uncheckAllToolStripMenuItem";
-            this.uncheckAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
+            this.uncheckAllToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
             this.uncheckAllToolStripMenuItem.Text = "Uncheck all";
             this.uncheckAllToolStripMenuItem.Click += new System.EventHandler(this.ContextUpdateVersion_UncheckAll_Click);
             // 
@@ -165,7 +175,7 @@
             this.tabReleasing.Padding = new System.Windows.Forms.Padding(3);
             this.tabReleasing.Size = new System.Drawing.Size(985, 463);
             this.tabReleasing.TabIndex = 1;
-            this.tabReleasing.Text = "Release Management";
+            this.tabReleasing.Text = "Release Products";
             this.tabReleasing.UseVisualStyleBackColor = true;
             // 
             // dataGridViewReleases
@@ -229,32 +239,15 @@
             // 
             // tabVersions
             // 
-            this.tabVersions.Controls.Add(this.splitVersionsAndHistory);
+            this.tabVersions.Controls.Add(this.dataGridViewProducts);
             this.tabVersions.Controls.Add(this.flowLayoutPanel1);
             this.tabVersions.Location = new System.Drawing.Point(4, 22);
             this.tabVersions.Name = "tabVersions";
             this.tabVersions.Padding = new System.Windows.Forms.Padding(3);
             this.tabVersions.Size = new System.Drawing.Size(985, 463);
             this.tabVersions.TabIndex = 0;
-            this.tabVersions.Text = "Version Management";
+            this.tabVersions.Text = "Update Versions";
             this.tabVersions.UseVisualStyleBackColor = true;
-            // 
-            // splitVersionsAndHistory
-            // 
-            this.splitVersionsAndHistory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitVersionsAndHistory.Location = new System.Drawing.Point(3, 3);
-            this.splitVersionsAndHistory.Name = "splitVersionsAndHistory";
-            // 
-            // splitVersionsAndHistory.Panel1
-            // 
-            this.splitVersionsAndHistory.Panel1.Controls.Add(this.dataGridViewProducts);
-            // 
-            // splitVersionsAndHistory.Panel2
-            // 
-            this.splitVersionsAndHistory.Panel2.Controls.Add(this.splitHistoryInfoWithVersionHistory);
-            this.splitVersionsAndHistory.Size = new System.Drawing.Size(979, 423);
-            this.splitVersionsAndHistory.SplitterDistance = 336;
-            this.splitVersionsAndHistory.TabIndex = 4;
             // 
             // dataGridViewProducts
             // 
@@ -267,20 +260,16 @@
             this.colCurrentVersion,
             this.colVersionToSet,
             this.colUpdateVersion,
-            this.colVersionHistoryUpdated,
-            this.colInternalVersionHistory});
+            this.colVersionHistoryUpdated});
             this.dataGridViewProducts.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridViewProducts.Location = new System.Drawing.Point(0, 0);
+            this.dataGridViewProducts.Location = new System.Drawing.Point(3, 3);
             this.dataGridViewProducts.MultiSelect = false;
             this.dataGridViewProducts.Name = "dataGridViewProducts";
-            this.dataGridViewProducts.Size = new System.Drawing.Size(336, 423);
-            this.dataGridViewProducts.TabIndex = 2;
+            this.dataGridViewProducts.Size = new System.Drawing.Size(979, 423);
+            this.dataGridViewProducts.TabIndex = 5;
             this.dataGridViewProducts.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewProducts_CellContentClick);
-            this.dataGridViewProducts.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewProducts_CellEndEdit);
-            this.dataGridViewProducts.CellMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewProducts_CellMouseClick);
             this.dataGridViewProducts.CellValidating += new System.Windows.Forms.DataGridViewCellValidatingEventHandler(this.dataGridViewProducts_CellValidating);
             this.dataGridViewProducts.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewProducts_ColumnHeaderMouseClick);
-            this.dataGridViewProducts.SelectionChanged += new System.EventHandler(this.dataGridViewProducts_SelectionChanged);
             // 
             // colProduct
             // 
@@ -312,11 +301,116 @@
             this.colVersionHistoryUpdated.Name = "colVersionHistoryUpdated";
             this.colVersionHistoryUpdated.ReadOnly = true;
             // 
-            // colInternalVersionHistory
+            // flowLayoutPanel1
             // 
-            this.colInternalVersionHistory.HeaderText = "internal_VersionHistory";
-            this.colInternalVersionHistory.Name = "colInternalVersionHistory";
-            this.colInternalVersionHistory.Visible = false;
+            this.flowLayoutPanel1.Controls.Add(this.btnChangeVersions);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 426);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(979, 34);
+            this.flowLayoutPanel1.TabIndex = 3;
+            // 
+            // btnChangeVersions
+            // 
+            this.btnChangeVersions.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.btnChangeVersions.Location = new System.Drawing.Point(861, 3);
+            this.btnChangeVersions.Name = "btnChangeVersions";
+            this.btnChangeVersions.Size = new System.Drawing.Size(115, 26);
+            this.btnChangeVersions.TabIndex = 2;
+            this.btnChangeVersions.Text = "Update Versions";
+            this.btnChangeVersions.UseVisualStyleBackColor = true;
+            this.btnChangeVersions.Click += new System.EventHandler(this.UpdateVersionNumbers_Click);
+            // 
+            // tabMainWindow
+            // 
+            this.tabMainWindow.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tabMainWindow.Controls.Add(this.tabVersions);
+            this.tabMainWindow.Controls.Add(this.tabReleasing);
+            this.tabMainWindow.Controls.Add(this.tabVersionHistory);
+            this.tabMainWindow.Location = new System.Drawing.Point(13, 32);
+            this.tabMainWindow.Name = "tabMainWindow";
+            this.tabMainWindow.SelectedIndex = 0;
+            this.tabMainWindow.Size = new System.Drawing.Size(993, 489);
+            this.tabMainWindow.TabIndex = 4;
+            this.tabMainWindow.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabMainWindow_Selected);
+            // 
+            // tabVersionHistory
+            // 
+            this.tabVersionHistory.Controls.Add(this.splitContainer1);
+            this.tabVersionHistory.Controls.Add(this.flowLayoutPanel3);
+            this.tabVersionHistory.Location = new System.Drawing.Point(4, 22);
+            this.tabVersionHistory.Name = "tabVersionHistory";
+            this.tabVersionHistory.Padding = new System.Windows.Forms.Padding(3);
+            this.tabVersionHistory.Size = new System.Drawing.Size(985, 463);
+            this.tabVersionHistory.TabIndex = 2;
+            this.tabVersionHistory.Text = "Version History";
+            this.tabVersionHistory.UseVisualStyleBackColor = true;
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(3, 3);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.dataGridViewVersionHist);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.splitHistoryInfoWithVersionHistory);
+            this.splitContainer1.Size = new System.Drawing.Size(979, 423);
+            this.splitContainer1.SplitterDistance = 336;
+            this.splitContainer1.TabIndex = 5;
+            // 
+            // dataGridViewVersionHist
+            // 
+            this.dataGridViewVersionHist.AllowUserToAddRows = false;
+            this.dataGridViewVersionHist.AllowUserToDeleteRows = false;
+            this.dataGridViewVersionHist.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders;
+            this.dataGridViewVersionHist.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewVersionHist.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colVHProduct,
+            this.colVHCurrentVersion,
+            this.colVHVersionHistoryUpdated,
+            this.colVHInternalVersionHistory});
+            this.dataGridViewVersionHist.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGridViewVersionHist.Location = new System.Drawing.Point(0, 0);
+            this.dataGridViewVersionHist.MultiSelect = false;
+            this.dataGridViewVersionHist.Name = "dataGridViewVersionHist";
+            this.dataGridViewVersionHist.Size = new System.Drawing.Size(336, 423);
+            this.dataGridViewVersionHist.TabIndex = 2;
+            this.dataGridViewVersionHist.CellMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewVersionHist_CellMouseClick);
+            this.dataGridViewVersionHist.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewVersionHist_ColumnHeaderMouseClick);
+            // 
+            // colVHProduct
+            // 
+            this.colVHProduct.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVHProduct.HeaderText = "Product";
+            this.colVHProduct.Name = "colVHProduct";
+            this.colVHProduct.ReadOnly = true;
+            this.colVHProduct.Width = 69;
+            // 
+            // colVHCurrentVersion
+            // 
+            this.colVHCurrentVersion.HeaderText = "Current version";
+            this.colVHCurrentVersion.Name = "colVHCurrentVersion";
+            this.colVHCurrentVersion.ReadOnly = true;
+            // 
+            // colVHVersionHistoryUpdated
+            // 
+            this.colVHVersionHistoryUpdated.HeaderText = "Version history updated?";
+            this.colVHVersionHistoryUpdated.Name = "colVHVersionHistoryUpdated";
+            this.colVHVersionHistoryUpdated.ReadOnly = true;
+            // 
+            // colVHInternalVersionHistory
+            // 
+            this.colVHInternalVersionHistory.HeaderText = "internal_VersionHistory";
+            this.colVHInternalVersionHistory.Name = "colVHInternalVersionHistory";
+            this.colVHInternalVersionHistory.Visible = false;
             // 
             // splitHistoryInfoWithVersionHistory
             // 
@@ -333,8 +427,8 @@
             // 
             this.splitHistoryInfoWithVersionHistory.Panel2.Controls.Add(this.groupBox2);
             this.splitHistoryInfoWithVersionHistory.Size = new System.Drawing.Size(639, 423);
-            this.splitHistoryInfoWithVersionHistory.SplitterDistance = 201;
-            this.splitHistoryInfoWithVersionHistory.TabIndex = 0;
+            this.splitHistoryInfoWithVersionHistory.SplitterDistance = 200;
+            this.splitHistoryInfoWithVersionHistory.TabIndex = 1;
             // 
             // splitCommitMessagesWithPrevHist
             // 
@@ -349,7 +443,7 @@
             // splitCommitMessagesWithPrevHist.Panel2
             // 
             this.splitCommitMessagesWithPrevHist.Panel2.Controls.Add(this.grpPreviousVersionHist);
-            this.splitCommitMessagesWithPrevHist.Size = new System.Drawing.Size(639, 201);
+            this.splitCommitMessagesWithPrevHist.Size = new System.Drawing.Size(639, 200);
             this.splitCommitMessagesWithPrevHist.SplitterDistance = 327;
             this.splitCommitMessagesWithPrevHist.TabIndex = 0;
             // 
@@ -362,7 +456,7 @@
             this.grpBoxCommitMessages.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpBoxCommitMessages.Location = new System.Drawing.Point(0, 0);
             this.grpBoxCommitMessages.Name = "grpBoxCommitMessages";
-            this.grpBoxCommitMessages.Size = new System.Drawing.Size(327, 201);
+            this.grpBoxCommitMessages.Size = new System.Drawing.Size(327, 200);
             this.grpBoxCommitMessages.TabIndex = 1;
             this.grpBoxCommitMessages.TabStop = false;
             this.grpBoxCommitMessages.Text = "Commit Messages";
@@ -415,7 +509,7 @@
             this.txtCommitMessages.Name = "txtCommitMessages";
             this.txtCommitMessages.ReadOnly = true;
             this.txtCommitMessages.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtCommitMessages.Size = new System.Drawing.Size(315, 135);
+            this.txtCommitMessages.Size = new System.Drawing.Size(315, 134);
             this.txtCommitMessages.TabIndex = 0;
             this.txtCommitMessages.Text = "";
             this.txtCommitMessages.WordWrap = false;
@@ -426,7 +520,7 @@
             this.grpPreviousVersionHist.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpPreviousVersionHist.Location = new System.Drawing.Point(0, 0);
             this.grpPreviousVersionHist.Name = "grpPreviousVersionHist";
-            this.grpPreviousVersionHist.Size = new System.Drawing.Size(308, 201);
+            this.grpPreviousVersionHist.Size = new System.Drawing.Size(308, 200);
             this.grpPreviousVersionHist.TabIndex = 0;
             this.grpPreviousVersionHist.TabStop = false;
             this.grpPreviousVersionHist.Text = "Previous Track Version History";
@@ -439,7 +533,7 @@
             this.txtPreviousVersionHistory.Name = "txtPreviousVersionHistory";
             this.txtPreviousVersionHistory.ReadOnly = true;
             this.txtPreviousVersionHistory.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtPreviousVersionHistory.Size = new System.Drawing.Size(302, 182);
+            this.txtPreviousVersionHistory.Size = new System.Drawing.Size(302, 181);
             this.txtPreviousVersionHistory.TabIndex = 0;
             this.txtPreviousVersionHistory.Text = "";
             this.txtPreviousVersionHistory.WordWrap = false;
@@ -450,7 +544,7 @@
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(639, 218);
+            this.groupBox2.Size = new System.Drawing.Size(639, 219);
             this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Current Track Version History";
@@ -462,45 +556,11 @@
             this.txtCurVersionHistory.Location = new System.Drawing.Point(3, 16);
             this.txtCurVersionHistory.Name = "txtCurVersionHistory";
             this.txtCurVersionHistory.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtCurVersionHistory.Size = new System.Drawing.Size(633, 199);
+            this.txtCurVersionHistory.Size = new System.Drawing.Size(633, 200);
             this.txtCurVersionHistory.TabIndex = 0;
             this.txtCurVersionHistory.Text = "";
             this.txtCurVersionHistory.WordWrap = false;
             this.txtCurVersionHistory.TextChanged += new System.EventHandler(this.txtCurVersionHistory_TextChanged);
-            // 
-            // flowLayoutPanel1
-            // 
-            this.flowLayoutPanel1.Controls.Add(this.btnChangeVersions);
-            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 426);
-            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(979, 34);
-            this.flowLayoutPanel1.TabIndex = 3;
-            // 
-            // btnChangeVersions
-            // 
-            this.btnChangeVersions.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnChangeVersions.Location = new System.Drawing.Point(861, 3);
-            this.btnChangeVersions.Name = "btnChangeVersions";
-            this.btnChangeVersions.Size = new System.Drawing.Size(115, 26);
-            this.btnChangeVersions.TabIndex = 2;
-            this.btnChangeVersions.Text = "Update Versions";
-            this.btnChangeVersions.UseVisualStyleBackColor = true;
-            this.btnChangeVersions.Click += new System.EventHandler(this.UpdateVersionNumbers_Click);
-            // 
-            // tabMainWindow
-            // 
-            this.tabMainWindow.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tabMainWindow.Controls.Add(this.tabVersions);
-            this.tabMainWindow.Controls.Add(this.tabReleasing);
-            this.tabMainWindow.Location = new System.Drawing.Point(13, 32);
-            this.tabMainWindow.Name = "tabMainWindow";
-            this.tabMainWindow.SelectedIndex = 0;
-            this.tabMainWindow.Size = new System.Drawing.Size(993, 489);
-            this.tabMainWindow.TabIndex = 4;
             // 
             // contextVersionHistory
             // 
@@ -509,32 +569,52 @@
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem,
             this.resetVersionFilesToolStripMenuItem});
             this.contextVersionHistory.Name = "contextVersionHistory";
-            this.contextVersionHistory.Size = new System.Drawing.Size(303, 70);
+            this.contextVersionHistory.Size = new System.Drawing.Size(286, 70);
             // 
             // generateMissingFilesToolStripMenuItem
             // 
             this.generateMissingFilesToolStripMenuItem.Name = "generateMissingFilesToolStripMenuItem";
-            this.generateMissingFilesToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.generateMissingFilesToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
             this.generateMissingFilesToolStripMenuItem.Text = "Generate missing file(s)";
             this.generateMissingFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_GenerateMissingVersionFiles_Click);
             // 
             // replaceNotYetReleasedWithCurrentDateToolStripMenuItem
             // 
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Name = "replaceNotYetReleasedWithCurrentDateToolStripMenuItem";
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Text = "Replace \'Not yet released\' with current date";
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ReplaceNotYetReleasedWithCurrentDate_Click);
             // 
             // resetVersionFilesToolStripMenuItem
             // 
             this.resetVersionFilesToolStripMenuItem.Name = "resetVersionFilesToolStripMenuItem";
-            this.resetVersionFilesToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.resetVersionFilesToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
             this.resetVersionFilesToolStripMenuItem.Text = "Reload version file(s) from disk";
             this.resetVersionFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ResetVersionFiles_Click);
             // 
             // errorProvider1
             // 
             this.errorProvider1.ContainerControl = this;
+            // 
+            // flowLayoutPanel3
+            // 
+            this.flowLayoutPanel3.Controls.Add(this.btnUpdateVersionHistory);
+            this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.flowLayoutPanel3.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel3.Location = new System.Drawing.Point(3, 426);
+            this.flowLayoutPanel3.Name = "flowLayoutPanel3";
+            this.flowLayoutPanel3.Size = new System.Drawing.Size(979, 34);
+            this.flowLayoutPanel3.TabIndex = 6;
+            // 
+            // btnUpdateVersionHistory
+            // 
+            this.btnUpdateVersionHistory.Location = new System.Drawing.Point(861, 3);
+            this.btnUpdateVersionHistory.Name = "btnUpdateVersionHistory";
+            this.btnUpdateVersionHistory.Size = new System.Drawing.Size(115, 26);
+            this.btnUpdateVersionHistory.TabIndex = 0;
+            this.btnUpdateVersionHistory.Text = "Update history";
+            this.btnUpdateVersionHistory.UseVisualStyleBackColor = true;
+            this.btnUpdateVersionHistory.Click += new System.EventHandler(this.UpdateVersionHistory_Click);
             // 
             // MyForceReleaserGUI
             // 
@@ -553,11 +633,15 @@
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReleases)).EndInit();
             this.flowLayoutPanel2.ResumeLayout(false);
             this.tabVersions.ResumeLayout(false);
-            this.splitVersionsAndHistory.Panel1.ResumeLayout(false);
-            this.splitVersionsAndHistory.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.splitVersionsAndHistory)).EndInit();
-            this.splitVersionsAndHistory.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewProducts)).EndInit();
+            this.flowLayoutPanel1.ResumeLayout(false);
+            this.tabMainWindow.ResumeLayout(false);
+            this.tabVersionHistory.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewVersionHist)).EndInit();
             this.splitHistoryInfoWithVersionHistory.Panel1.ResumeLayout(false);
             this.splitHistoryInfoWithVersionHistory.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitHistoryInfoWithVersionHistory)).EndInit();
@@ -570,10 +654,9 @@
             this.grpBoxCommitMessages.PerformLayout();
             this.grpPreviousVersionHist.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
-            this.flowLayoutPanel1.ResumeLayout(false);
-            this.tabMainWindow.ResumeLayout(false);
             this.contextVersionHistory.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
+            this.flowLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -593,17 +676,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.Button btnRelease;
         private System.Windows.Forms.TabPage tabVersions;
-        private System.Windows.Forms.SplitContainer splitVersionsAndHistory;
-        private System.Windows.Forms.DataGridView dataGridViewProducts;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colProduct;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colCurrentVersion;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colVersionToSet;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn colUpdateVersion;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colVersionHistoryUpdated;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colInternalVersionHistory;
-        private System.Windows.Forms.SplitContainer splitHistoryInfoWithVersionHistory;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.RichTextBox txtCurVersionHistory;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Button btnChangeVersions;
         private System.Windows.Forms.TabControl tabMainWindow;
@@ -613,17 +685,35 @@
         private System.Windows.Forms.DataGridViewCheckBoxColumn colReleaseInternalIsTagBased;
         private System.Windows.Forms.ContextMenuStrip contextVersionHistory;
         private System.Windows.Forms.ToolStripMenuItem generateMissingFilesToolStripMenuItem;
-        private System.Windows.Forms.SplitContainer splitCommitMessagesWithPrevHist;
-        private System.Windows.Forms.GroupBox grpBoxCommitMessages;
-        private System.Windows.Forms.RichTextBox txtCommitMessages;
-        private System.Windows.Forms.GroupBox grpPreviousVersionHist;
-        private System.Windows.Forms.RichTextBox txtPreviousVersionHistory;
-        private System.Windows.Forms.TextBox txtCommitMessagesFilters;
-        private System.Windows.Forms.CheckBox chkIgnoreCaseForRegex;
-        private System.Windows.Forms.CheckBox chkInclusiveRegex;
         private System.Windows.Forms.ToolStripMenuItem replaceNotYetReleasedWithCurrentDateToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem resetVersionFilesToolStripMenuItem;
         private System.Windows.Forms.ErrorProvider errorProvider1;
+        private System.Windows.Forms.DataGridView dataGridViewProducts;
+        private System.Windows.Forms.TabPage tabVersionHistory;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.DataGridView dataGridViewVersionHist;
+        private System.Windows.Forms.SplitContainer splitHistoryInfoWithVersionHistory;
+        private System.Windows.Forms.SplitContainer splitCommitMessagesWithPrevHist;
+        private System.Windows.Forms.GroupBox grpBoxCommitMessages;
+        private System.Windows.Forms.CheckBox chkIgnoreCaseForRegex;
+        private System.Windows.Forms.CheckBox chkInclusiveRegex;
+        private System.Windows.Forms.TextBox txtCommitMessagesFilters;
+        private System.Windows.Forms.RichTextBox txtCommitMessages;
+        private System.Windows.Forms.GroupBox grpPreviousVersionHist;
+        private System.Windows.Forms.RichTextBox txtPreviousVersionHistory;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.RichTextBox txtCurVersionHistory;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProduct;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCurrentVersion;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVersionToSet;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn colUpdateVersion;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVersionHistoryUpdated;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVHProduct;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVHCurrentVersion;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVHVersionHistoryUpdated;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVHInternalVersionHistory;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
+        private System.Windows.Forms.Button btnUpdateVersionHistory;
 
     }
 }
