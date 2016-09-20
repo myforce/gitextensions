@@ -29,5 +29,27 @@ namespace MyForceReleaser
         {
             return _Git.RunGitCmd(strCMD);
         }
+
+
+        public bool IsCurrentBranchMaster()
+        {
+            string strCurrentBranchName = GetCurrentBranchName();
+            return !string.IsNullOrWhiteSpace(strCurrentBranchName)
+                && System.Text.RegularExpressions.Regex.Match(strCurrentBranchName, "master", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Success;
+        }
+
+        public bool IsCurrentBranchFixBranch()
+        {
+            string strCurrentBranchName = GetCurrentBranchName();
+            return !string.IsNullOrWhiteSpace(strCurrentBranchName)
+                && System.Text.RegularExpressions.Regex.Match(strCurrentBranchName, @"fix-(\d+\.)+\d+", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Success;
+        }
+
+        public bool IsCurrentBranchVersionBranch()
+        {
+            string strCurrentBranchName = GetCurrentBranchName();
+            return !string.IsNullOrWhiteSpace(strCurrentBranchName)
+                && System.Text.RegularExpressions.Regex.Match(strCurrentBranchName, @"version-(\d+\.)+\d+", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Success;
+        }
     }
 }

@@ -24,8 +24,8 @@ namespace MyForceReleaser
 
             progressBar.Visible = false;
             progressBar.Minimum = 0;
-            m_nCurrentSelectedVersionRow = -1;
-            m_nPreviousSelectedVersionRow = -1;
+            m_nVHCurrentSelectedVersionRow = -1;
+            m_nVHPreviousSelectedVersionRow = -1;
             m_lstNonFilteredCommitMessages = new List<string>();
 
             //Load the commit message regexes from the model
@@ -33,6 +33,13 @@ namespace MyForceReleaser
 
             //Parse all products
             LoadProducts();
+
+            tabVersions.Enabled = _Model.Git.IsCurrentBranchMaster() || _Model.Git.IsCurrentBranchVersionBranch();
+            tabReleasing.Enabled = _Model.Git.IsCurrentBranchVersionBranch();
+            tabVersionHistory.Enabled = !_Model.Git.IsCurrentBranchVersionBranch(); //Enable history on all except version branches! So they can be merged in!
+
+            //Open the correct tab
+            tabMainWindow_Selected(null, new TabControlEventArgs(tabMainWindow.SelectedTab, 0, TabControlAction.Selected));
         }
         protected override void OnClosed(EventArgs e)
         {
@@ -96,8 +103,8 @@ namespace MyForceReleaser
         /// List of all commit messages. This can be used (re-)apply filters on the views
         /// </summary>
         private List<string> m_lstNonFilteredCommitMessages;
-        private int m_nPreviousSelectedVersionRow;
-        private int m_nCurrentSelectedVersionRow;
+        private int m_nVHPreviousSelectedVersionRow;
+        private int m_nVHCurrentSelectedVersionRow;
         #endregion
 
         #region VERSIONTAB_CONSTANTS
@@ -115,9 +122,8 @@ namespace MyForceReleaser
         private readonly string PRODUCTS_COL_CURRENTVERSION = "colCurrentVersion";
         private readonly string PRODUCTS_COL_VERSIONTOSET = "colVersionToSet";
         private readonly string PRODUCTS_COL_UPDATEVERSION = "colUpdateVersion";
-        private readonly string PRODUCTS_COL_VERSIONHISTORY = "colInternalVersionHistory";
         private readonly string PRODUCTS_COL_VERSIONHISTORYUPDATED = "colVersionHistoryUpdated";
-        #endregion
+        #endregion      
 
         //Actions
         private void UpdateVersionNumbers_Click(object sender, EventArgs e)
@@ -129,8 +135,7 @@ namespace MyForceReleaser
                 return;
 
             int nProductsFoundToRelease = 0;
-            int nVersionHistoriesUpdated = 0;
-
+            
             //Load the resource files for each valid product
             Dictionary<string, List<string>> ResourceFilesForProducts = new Dictionary<string, List<string>>();
             Dictionary<string, List<string>> SqlFilesForProducs = new Dictionary<string, List<string>>();
@@ -138,9 +143,6 @@ namespace MyForceReleaser
             MyForceReleaser.LoadResourceMapsForValidProducts(_Model, ref ResourceFilesForProducts, ref SqlFilesForProducs);
             if (ResourceFilesForProducts.Count <= 0 && SqlFilesForProducs.Count <= 0)
                 return; //Already notified so just abort once here
-
-            //Trigger selection changed to make sure version history is synced with data grid!
-            dataGridViewProducts_SelectionChanged(null, new EventArgs());
 
             //Change all version numbers
             List<PowerShell> lstToExecute = new List<PowerShell>();
@@ -167,35 +169,11 @@ namespace MyForceReleaser
                     
                     lstToExecute.Add(ps);
                 }
-
-                //Check if we need to save the version history file
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, RowIndex].Value;
-                if ((bool)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORYUPDATED, RowIndex].Value && cache != null && cache.Version.Equals(strTrack))
-                {
-                    MyForceReleaser.SaveVersionHistoryFile(_Model, strProduct, strTrack, cache.HistoryText);
-                    nVersionHistoriesUpdated++;
-                }
             }
-            MessageBox.Show(string.Format("{0}/{1} version history files have changed and are saved.", nVersionHistoriesUpdated, dataGridViewProducts.Rows.Count));
 
             if (nProductsFoundToRelease <= 0)
             {
-                string strMessage = "No products checked to update the version numbers!";
-                if (nVersionHistoriesUpdated > 0)
-                {
-                    strMessage += System.Environment.NewLine + "Do you wish to commit only the version history files?";
-                    if (DialogResult.Yes == MessageBox.Show(strMessage, "Commit version history ?", MessageBoxButtons.YesNo))
-                    {
-                        //Commit the changes
-                        _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
-                        _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version history files\"");
-                        
-                    }
-                    Close(); //Done
-                    return;
-                }
-                else
-                    MessageBox.Show(strMessage);
+                MessageBox.Show("No products checked to update the version numbers!");
                 return;
             }
 
@@ -224,227 +202,12 @@ namespace MyForceReleaser
             }
 
             //Commit the changes
-            _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
             _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version numbers for release\"");
-
             MessageBox.Show(string.Format("{0}/{1} program versions are updated. Please verify them and then re-open this plugin to actually release the programs!", nProductsFoundToRelease, dataGridViewProducts.Rows.Count));
 
             //Close the GUI so user can verify his actions
             Close();
         }
-        private void SyncVersionHistory(bool bFullReload = false)
-        {
-            bool bSelectionChanged = m_nCurrentSelectedVersionRow != m_nPreviousSelectedVersionRow;
-
-            //Store possible updated version history when selected index changed
-            if (bSelectionChanged && m_nPreviousSelectedVersionRow >= 0 && m_nPreviousSelectedVersionRow < dataGridViewProducts.Rows.Count)
-            {
-                /*//Assure object cache
-                bool bHasTextOnScreen = !string.IsNullOrWhiteSpace(txtCurVersionHistory.Text);
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nPreviousSelectedVersionRow].Value;
-                if (cache == null && bHasTextOnScreen)
-                {
-                    cache = new VersionHistoryCache(StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, m_nPreviousSelectedVersionRow].Value));
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nPreviousSelectedVersionRow].Value = cache;
-                }
-
-                //Save text in cache
-                if (bHasTextOnScreen)
-                    cache.HistoryText = txtCurVersionHistory.Text;*/
-            }
-
-            // Update current version history visual
-            if (m_nCurrentSelectedVersionRow >= 0 && m_nCurrentSelectedVersionRow < dataGridViewProducts.Rows.Count)
-            {
-                //Process version history file
-                string strProduct = (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, m_nCurrentSelectedVersionRow].Value;
-                string strTrack = StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, m_nCurrentSelectedVersionRow].Value);
-
-                //Assure cache object
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nCurrentSelectedVersionRow].Value;
-                if (cache == null || !cache.Version.Equals(strTrack))
-                {
-                    //Reset content just in case the track didn't equals
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nCurrentSelectedVersionRow].Value = null;
-
-                    //Get the file content and place 
-                    string strFileContent = MyForceReleaser.ReadVersionHistoryFile(_Model, strProduct, strTrack);
-                    if (!string.IsNullOrWhiteSpace(strFileContent))
-                        dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nCurrentSelectedVersionRow].Value = new VersionHistoryCache(strTrack, strFileContent);
-
-                    cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, m_nCurrentSelectedVersionRow].Value;
-                }
-                txtCurVersionHistory.Text = cache != null ? cache.HistoryText : "";
-
-                //Process previous version history file
-                string strPrevPath = MyForceReleaser.GetVersionHistoryFilePathForProductForPreviousTrack(_Model, strProduct, strTrack);
-                if (System.IO.File.Exists(strPrevPath))
-                    txtPreviousVersionHistory.Text = string.Format("Path: {0}\n{1}", strPrevPath, System.IO.File.ReadAllText(strPrevPath));
-                else
-                    txtPreviousVersionHistory.Text = "No version history file found for the previous track!";
-            }
-            else
-            {
-                txtCurVersionHistory.Text = "";
-                txtPreviousVersionHistory.Text = "";
-            }
-
-            // Update status for each row
-            bool bRefreshAnyWay = false;
-            for (int nRowIndex = 0; nRowIndex < dataGridViewProducts.Rows.Count; nRowIndex++)
-            {
-                bRefreshAnyWay = bFullReload || (bSelectionChanged && m_nPreviousSelectedVersionRow == nRowIndex); //Also update previous in case index changed
-                string strProductName = (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, nRowIndex].Value;
-                string strTrack = StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, nRowIndex].Value);
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value;
-
-                if (cache != null && !cache.Version.Equals(strTrack))
-                {
-                    //Version were updated so cache doesn't fit anymore
-                    if (nRowIndex != m_nCurrentSelectedVersionRow) //Not needed for current selection since that just got replaced during activating context for this product
-                        dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value = null;
-                    bRefreshAnyWay = true;
-                }
-
-                //Only sync files for the current displayed item
-                if (nRowIndex == m_nCurrentSelectedVersionRow || bRefreshAnyWay)
-                {
-                    if (MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack))
-                    {
-                        //We have a version file => check if the history file was changed since last tag                    
-                        string strOutput = _Model.Git.RunGitCmd(string.Format("diff {0}-{1} HEAD -- \"{2}\"", strProductName, dataGridViewProducts[PRODUCTS_COL_CURRENTVERSION, nRowIndex].Value, MyForceReleaser.GetVersionHistoryRelativeFilePathForProduct(strProductName, strTrack)));
-                        if (string.IsNullOrWhiteSpace(strOutput))
-                            dataGridViewProducts.Rows[nRowIndex].DefaultCellStyle.BackColor = Color.Orange; //No changes since last tag
-                        else
-                            dataGridViewProducts.Rows[nRowIndex].DefaultCellStyle.BackColor = Color.White; //Changes since last tag                   
-                    }
-                    else
-                        dataGridViewProducts.Rows[nRowIndex].DefaultCellStyle.BackColor = dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value == null ? Color.Red : Color.Orange;
-                }
-
-                //Update the marker that tells if version history is updated or not (If there is no text yet => no component has been selected yet)
-                dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORYUPDATED, nRowIndex].Value = cache != null ? MyForceReleaser.IsVersionHistoryChanged(_Model, strProductName, strTrack, cache.HistoryText) : false;
-            }
-        }
-        private void SyncCommitMessages()
-        {
-            bool bSelectionChanged = m_nCurrentSelectedVersionRow != m_nPreviousSelectedVersionRow;
-            if (bSelectionChanged)
-            {
-                // Update the list of non-filtered commit messages
-                m_lstNonFilteredCommitMessages.Clear();
-                if (m_nCurrentSelectedVersionRow >= 0 && m_nCurrentSelectedVersionRow < dataGridViewProducts.Rows.Count)
-                {
-                    //git log --pretty=oneline Cca-5.3.5.1..Cca-5.3.5.2
-                    //7a3af222936702d3f5298b95c071a13b9ae86446 Changed Version Numbers to 5.3.5.2
-                    //5af1d3eb5a913e9b1ea012dbeb8afac681b4f37a Merge branch 'Version-5.3.5' of https://github.com/Askia/ContactCentre into Version-5.3.5
-                    //40f55635ac9107054dedc1449d43308e8571d7da 5.3.5 Kodim & Design Survey Service preliminary setups Added missing semi-colon to CcaConnectionPage.iss Set version numbers
-                    //d482cdf68a87a6a4fce73b32942a34ce8b78c35f Auto-merge Subversion
-                    //c0195fa7d5fb15fe356d040f55185292f9ced28b Merged revision(s) 36015-36099 from Project/branches/Version 5.3.4/Wave: 5.3.4.2 Preliminary checkin
-                    //2f47ecbb9be160e15a5e0aa6b203757f80762438 all properties of ADC in property view supported
-                    //4dde330d56330e32a9512f858f435e3cb6da77c3 Few devs on 5.3.5.X, property view for elements
-                    //bed40145dc3b7eb21b638e0879c28e0a515b532c XML reading and writing of ADC properties moved to AskCmn
-                    string strResult = _Model.Git.RunGitCmd(string.Format("log --pretty=oneline {0}-{1}..{2}", dataGridViewProducts[PRODUCTS_COL_PRODUCT, m_nCurrentSelectedVersionRow].Value, dataGridViewProducts[PRODUCTS_COL_CURRENTVERSION, m_nCurrentSelectedVersionRow].Value, _Model.Git.GetCurrentBranchName()));
-
-                    //Do some processing (Eg: Strip of commit ISH)
-                    var Matches = Regex.Matches(strResult, @"^.*?\s+(.*)$", RegexOptions.Multiline);
-                    foreach (Match match in Matches)
-                    {
-                        if (match.Groups.Count < 2)
-                            continue;
-                        m_lstNonFilteredCommitMessages.Add(match.Groups[1].Value);
-                    }
-                }
-            }
-
-            // Update the views
-
-            // Remove any notice of commits/filters on the screen controls
-            grpBoxCommitMessages.Text = grpBoxCommitMessages.Text.Replace(" --- (filtered)", "");
-            toolTipCommitMessages.SetToolTip(grpBoxCommitMessages, "");
-            txtCommitMessages.Text = "";
-
-            //Try catch to handle the case where regexes are (still) invalid or incomplete
-            try
-            {
-                //Filter the complete list of commit messages with filters the user has entered
-                StringBuilder finalStr = new StringBuilder();
-                StringBuilder finalStrFiltered = new StringBuilder();
-                List<string> lstCommitMessageIgnoreRegexes = this.CommitMessageIgnoreRegexes;
-                foreach (string Line in m_lstNonFilteredCommitMessages)
-                {
-                    bool bValid = true;
-                    int nRegexesCount = lstCommitMessageIgnoreRegexes.Count;
-                    while (bValid && --nRegexesCount >= 0)
-                    {
-                        //First bValid just tells us if we match
-                        bValid = Regex.Match(Line, lstCommitMessageIgnoreRegexes[nRegexesCount], chkIgnoreCaseForRegex.Checked ? RegexOptions.IgnoreCase : RegexOptions.None).Success;
-
-                        if (!chkInclusiveRegex.Checked)
-                            bValid = !bValid; //Invert matched => In case of exclusive not matched is good!
-                    }
-
-                    if (bValid)
-                        finalStr.AppendFormat(@"{0}{1}", Line, System.Environment.NewLine);
-                    else
-                        finalStrFiltered.AppendFormat(@"{0}{1}", Line, System.Environment.NewLine);
-                }
-
-                if (finalStrFiltered.Length > 0)
-                {
-                    //Filters active => Set tooltip & changed titles
-                    if (grpBoxCommitMessages.Text.IndexOf(" --- (filtered)") < 0)
-                        grpBoxCommitMessages.Text = grpBoxCommitMessages.Text + " --- (filtered)";
-                    toolTipCommitMessages.SetToolTip(grpBoxCommitMessages, finalStrFiltered.ToString());
-                }
-
-                //Show the differences
-                txtCommitMessages.Text = finalStr.ToString();
-            }
-            catch (Exception)
-            { }
-        }
-        
-        //Version history filtering
-        private void txtCommitMessagesFilters_TextChanged(object sender, EventArgs e)
-        {
-            SyncCommitMessages();
-        }
-        private void chkRegexOption_CheckedChanged(object sender, EventArgs e)
-        {
-            SyncCommitMessages();
-        }
-        private void txtCurVersionHistory_TextChanged(object sender, EventArgs e)
-        {
-            if (dataGridViewProducts.SelectedCells.Count > 0)
-            {
-                //Assure object cache
-                bool bHasTextOnScreen = !string.IsNullOrWhiteSpace(txtCurVersionHistory.Text);
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, dataGridViewProducts.SelectedCells[0].RowIndex].Value;
-                if (cache == null && bHasTextOnScreen)
-                {
-                    cache = new VersionHistoryCache(StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, dataGridViewProducts.SelectedCells[0].RowIndex].Value));
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, dataGridViewProducts.SelectedCells[0].RowIndex].Value = cache;
-                }
-
-                //Save text in cache
-                if (bHasTextOnScreen)
-                    cache.HistoryText = txtCurVersionHistory.Text;
-            }
-        }
-
-        //Data grid view events
-        private void dataGridViewProducts_SelectionChanged(object sender, EventArgs e)
-        {
-            m_nCurrentSelectedVersionRow = -1;
-            if (dataGridViewProducts.SelectedCells.Count > 0)
-                m_nCurrentSelectedVersionRow = dataGridViewProducts.SelectedCells[0].RowIndex;
-
-            SyncVersionHistory();
-            SyncCommitMessages();
-
-            m_nPreviousSelectedVersionRow = m_nCurrentSelectedVersionRow;
-        }    
         private void dataGridViewProducts_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -473,34 +236,6 @@ namespace MyForceReleaser
             {
                 if (e.Button == System.Windows.Forms.MouseButtons.Right)
                     contextShouldUpdateVersions.Show(Cursor.Position);
-            }
-            else if (e.ColumnIndex == dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORYUPDATED, 0].ColumnIndex)
-            {
-                if (e.Button == System.Windows.Forms.MouseButtons.Right)
-                    contextVersionHistory.Show(Cursor.Position);
-            }
-        }
-        private void dataGridViewProducts_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.RowIndex >= dataGridViewProducts.Rows.Count)
-                return;
-
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-            {
-                if (e.ColumnIndex == dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORYUPDATED, e.RowIndex].ColumnIndex)
-                    contextVersionHistory.Show(Cursor.Position);
-            }
-        }
-        private void dataGridViewProducts_CellEndEdit(object sender, DataGridViewCellEventArgs e)
-        {            
-            if (dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET , 0].ColumnIndex == e.ColumnIndex)
-            {
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, e.RowIndex].Value;
-                if (cache != null && !cache.Version.Equals(StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, 0].Value)))
-                {
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, e.RowIndex].Value = null;
-                    SyncVersionHistory();
-                }
             }
         }
         private void dataGridViewProducts_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
@@ -554,96 +289,7 @@ namespace MyForceReleaser
         {
             for (int nIndex = 0; nIndex < dataGridViewProducts.Rows.Count; nIndex++)
                 dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, nIndex].Value = false;
-        }
-        private void ContextVersionHistory_GenerateMissingVersionFiles_Click(object sender, EventArgs e)
-        {
-            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
-            Point pointOnClient = dataGridViewProducts.PointToClient(pointOnScreen);
-            DataGridView.HitTestInfo info = dataGridViewProducts.HitTest(pointOnClient.X, pointOnClient.Y);
-
-            int nStartIndex = 0;
-            int nCount = dataGridViewProducts.Rows.Count;
-
-            //Check if specific row is selected
-            if (info.RowIndex > 0)
-            {
-                //We support only single row selection => hence we can take the first selected item
-                nStartIndex = info.RowIndex;
-                nCount = 1;
-            }
-
-            for (int nIndex = nStartIndex; nIndex < nStartIndex + nCount; nIndex++)
-            {
-                string strProductName = (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, nIndex].Value;
-                string strVersion = (string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, nIndex].Value;
-                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersion);
-                if (!MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack))
-                {
-                    VersionHistoryCache cache = new VersionHistoryCache(strTrack, MyForceReleaser.GetDemoMarkDown(strProductName, strVersion));
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nIndex].Value = cache;
-                }
-            }
-
-            if (nCount > 0)
-                SyncVersionHistory();
-        }
-        private void ContextVersionHistory_ReplaceNotYetReleasedWithCurrentDate_Click(object sender, EventArgs e)
-        {
-            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
-            Point pointOnClient = dataGridViewProducts.PointToClient(pointOnScreen);
-            DataGridView.HitTestInfo info = dataGridViewProducts.HitTest(pointOnClient.X, pointOnClient.Y);
-            
-            int nStartIndex = 0;
-            int nCount = dataGridViewProducts.Rows.Count;
-
-            //Check if specific row is selected
-            if (info.RowIndex >= 0)
-            {
-                //We support only single row selection => hence we can take the first selected item
-                nStartIndex = info.RowIndex;
-                nCount = 1;
-            }
-
-            //Update the version history for the requested rows
-            for (int nRowIndex = nStartIndex; nRowIndex < nStartIndex + nCount; nRowIndex++)
-            {
-                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value;
-                if (cache == null)
-                {
-                    //In case where the cache is missing we need to load the cache from disk
-                    cache = new VersionHistoryCache(StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, nRowIndex].Value));
-                    cache.HistoryText = MyForceReleaser.ReadVersionHistoryFile(_Model, (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, nRowIndex].Value, StaticTools.GetMainTrackVersionNumber((string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, nRowIndex].Value));
-                    dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value = cache;
-                }
-                cache.HistoryText = Regex.Replace(cache.HistoryText, @"\(not yet released\)", string.Format("({0})", DateTime.Now.ToString("dd/MM/yyyy")), RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            }
-            if (nCount > 0)
-                SyncVersionHistory();
-        }
-        private void ContextVersionHistory_ResetVersionFiles_Click(object sender, EventArgs e)
-        {
-            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
-            Point pointOnClient = dataGridViewProducts.PointToClient(pointOnScreen);
-            DataGridView.HitTestInfo info = dataGridViewProducts.HitTest(pointOnClient.X, pointOnClient.Y);
-
-            int nStartIndex = 0;
-            int nCount = dataGridViewProducts.Rows.Count;
-
-            //Check if specific row is selected
-            if (info.RowIndex > 0)
-            {
-                //We support only single row selection => hence we can take the first selected item
-                nStartIndex = info.RowIndex;
-                nCount = 1;
-            }
-
-            //Update the version history for the requested rows
-            for (int nRowIndex = nStartIndex; nRowIndex < nStartIndex + nCount; nRowIndex++)
-                dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORY, nRowIndex].Value = null;
-
-            if (nCount > 0)
-                SyncVersionHistory();
-        }
+        }        
         #endregion
 
         #region ReleaseTab
@@ -758,14 +404,379 @@ namespace MyForceReleaser
         }
         #endregion
 
+        #region VersionHistoryTab
+        
+        #region VERSIONHISTORYTAB_CONSTANTS
+        private readonly string VERSIONHISTORY_COL_PRODUCT = "colVHProduct";
+        private readonly string VERSIONHISTORY_COL_CURRENTVERSION = "colVHCurrentVersion";
+        private readonly string VERSIONHISTORY_COL_VERSIONHISTORY = "colVHInternalVersionHistory";
+        private readonly string VERSIONHISTORY_COL_VERSIONHISTORYUPDATED = "colVHVersionHistoryUpdated";
+        #endregion
+
+        private void UpdateVersionHistory_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewVersionHist.Rows.Count < 0)
+                return; //No use to update rows
+
+            int nVersionHistoriesUpdated = 0;
+
+            //Trigger selection changed to make sure version history is synced with data grid!
+            dataGridViewVersionHist_SelectionChanged(null, new EventArgs());
+
+            //Change all version numbers
+            List<PowerShell> lstToExecute = new List<PowerShell>();
+            for (int RowIndex = 0; RowIndex < dataGridViewVersionHist.Rows.Count; RowIndex++)
+            {
+                string strProduct = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, RowIndex].Value;
+                string strVersionToSet = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, RowIndex].Value;
+                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersionToSet);               
+
+                //Check if we need to save the version history file
+                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, RowIndex].Value;
+                if ((bool)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, RowIndex].Value && cache != null && cache.Version.Equals(strTrack))
+                {
+                    MyForceReleaser.SaveVersionHistoryFile(_Model, strProduct, strTrack, cache.HistoryText);
+                    nVersionHistoriesUpdated++;
+                }
+            }
+            MessageBox.Show(string.Format("{0}/{1} version history files have changed and are saved.", nVersionHistoriesUpdated, dataGridViewVersionHist.Rows.Count));
+
+            //Commit the changes
+            _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
+            _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version history\"");
+
+            //Close the GUI so user can verify his actions
+            Close();
+        }
+        private void SyncVersionHistory(bool bFullReload = false)
+        {
+            bool bSelectionChanged = m_nVHCurrentSelectedVersionRow != m_nVHPreviousSelectedVersionRow;
+
+            // Update current version history visual
+            if (m_nVHCurrentSelectedVersionRow >= 0 && m_nVHCurrentSelectedVersionRow < dataGridViewVersionHist.Rows.Count)
+            {
+                //Process version history file
+                string strProduct = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, m_nVHCurrentSelectedVersionRow].Value;
+                string strTrack = StaticTools.GetMainTrackVersionNumber((string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, m_nVHCurrentSelectedVersionRow].Value);
+
+                //Assure cache object
+                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, m_nVHCurrentSelectedVersionRow].Value;
+                if (cache == null || !cache.Version.Equals(strTrack))
+                {
+                    //Reset content just in case the track didn't equals
+                    dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, m_nVHCurrentSelectedVersionRow].Value = null;
+
+                    //Get the file content and place 
+                    string strFileContent = MyForceReleaser.ReadVersionHistoryFile(_Model, strProduct, strTrack);
+                    if (!string.IsNullOrWhiteSpace(strFileContent))
+                        dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, m_nVHCurrentSelectedVersionRow].Value = new VersionHistoryCache(strTrack, strFileContent);
+
+                    cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, m_nVHCurrentSelectedVersionRow].Value;
+                }
+                txtCurVersionHistory.Text = cache != null ? cache.HistoryText : "";
+
+                //Process previous version history file
+                string strPrevPath = MyForceReleaser.GetVersionHistoryFilePathForProductForPreviousTrack(_Model, strProduct, strTrack);
+                if (System.IO.File.Exists(strPrevPath))
+                    txtPreviousVersionHistory.Text = string.Format("Path: {0}\n{1}", strPrevPath, System.IO.File.ReadAllText(strPrevPath));
+                else
+                    txtPreviousVersionHistory.Text = "No version history file found for the previous track!";
+            }
+            else
+            {
+                txtCurVersionHistory.Text = "";
+                txtPreviousVersionHistory.Text = "";
+            }
+
+            // Update status for each row
+            bool bRefreshAnyWay = false;
+            for (int nRowIndex = 0; nRowIndex < dataGridViewVersionHist.Rows.Count; nRowIndex++)
+            {
+                bRefreshAnyWay = bFullReload || (bSelectionChanged && m_nVHPreviousSelectedVersionRow == nRowIndex); //Also update previous in case index changed
+                string strProductName = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, nRowIndex].Value;
+                string strTrack = StaticTools.GetMainTrackVersionNumber((string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nRowIndex].Value);
+                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value;
+
+                if (cache != null && !cache.Version.Equals(strTrack))
+                {
+                    //Version were updated so cache doesn't fit anymore
+                    if (nRowIndex != m_nVHCurrentSelectedVersionRow) //Not needed for current selection since that just got replaced during activating context for this product
+                        dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value = null;
+                    bRefreshAnyWay = true;
+                }
+
+                //Only sync files for the current displayed item
+                if (bRefreshAnyWay)
+                {
+                    dataGridViewVersionHist.Rows[nRowIndex].DefaultCellStyle.BackColor = dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value == null && !MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack) ? Color.Red : Color.White;
+                    
+                    //if (MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack))
+                    //{
+                    //    //We have a version file => check if the history file was changed since last tag                    
+                    //    string strOutput = _Model.Git.RunGitCmd(string.Format("diff {0}-{1} HEAD -- \"{2}\"", strProductName, dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nRowIndex].Value, MyForceReleaser.GetVersionHistoryRelativeFilePathForProduct(strProductName, strTrack)));
+                    //    if (string.IsNullOrWhiteSpace(strOutput))
+                    //        dataGridViewVersionHist.Rows[nRowIndex].DefaultCellStyle.BackColor = Color.Orange; //No changes since last tag
+                    //    else
+                    //        dataGridViewVersionHist.Rows[nRowIndex].DefaultCellStyle.BackColor = Color.White; //Changes since last tag                   
+                    //}
+                    //else
+                    //    dataGridViewVersionHist.Rows[nRowIndex].DefaultCellStyle.BackColor = dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value == null ? Color.Red : Color.Orange;
+                }
+
+                //Update the marker that tells if version history is updated or not (If there is no text yet => no component has been selected yet)
+                dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, nRowIndex].Value = cache != null ? MyForceReleaser.IsVersionHistoryChanged(_Model, strProductName, strTrack, cache.HistoryText) : false;
+            }
+        }
+        private void SyncCommitMessages()
+        {
+            bool bSelectionChanged = m_nVHCurrentSelectedVersionRow != m_nVHPreviousSelectedVersionRow;
+            if (bSelectionChanged)
+            {
+                // Update the list of non-filtered commit messages
+                m_lstNonFilteredCommitMessages.Clear();
+                if (m_nVHCurrentSelectedVersionRow >= 0 && m_nVHCurrentSelectedVersionRow < dataGridViewVersionHist.Rows.Count)
+                {
+                    //git log --pretty=oneline Cca-5.3.5.1..Cca-5.3.5.2
+                    //7a3af222936702d3f5298b95c071a13b9ae86446 Changed Version Numbers to 5.3.5.2
+                    //5af1d3eb5a913e9b1ea012dbeb8afac681b4f37a Merge branch 'Version-5.3.5' of https://github.com/Askia/ContactCentre into Version-5.3.5
+                    //40f55635ac9107054dedc1449d43308e8571d7da 5.3.5 Kodim & Design Survey Service preliminary setups Added missing semi-colon to CcaConnectionPage.iss Set version numbers
+                    //d482cdf68a87a6a4fce73b32942a34ce8b78c35f Auto-merge Subversion
+                    //c0195fa7d5fb15fe356d040f55185292f9ced28b Merged revision(s) 36015-36099 from Project/branches/Version 5.3.4/Wave: 5.3.4.2 Preliminary checkin
+                    //2f47ecbb9be160e15a5e0aa6b203757f80762438 all properties of ADC in property view supported
+                    //4dde330d56330e32a9512f858f435e3cb6da77c3 Few devs on 5.3.5.X, property view for elements
+                    //bed40145dc3b7eb21b638e0879c28e0a515b532c XML reading and writing of ADC properties moved to AskCmn
+                    string strResult = _Model.Git.RunGitCmd(string.Format("log --pretty=oneline {0}-{1}..{2}", dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, m_nVHCurrentSelectedVersionRow].Value, dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, m_nVHCurrentSelectedVersionRow].Value, _Model.Git.GetCurrentBranchName()));
+                    if (strResult.ToLower().StartsWith("fatal:"))
+                    {
+                        //Do a second attempt since some of our tags are created with the v prefix before the version
+                        strResult = _Model.Git.RunGitCmd(string.Format("log --pretty=oneline {0}-v{1}..{2}", dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, m_nVHCurrentSelectedVersionRow].Value, dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, m_nVHCurrentSelectedVersionRow].Value, _Model.Git.GetCurrentBranchName()));
+                    }
+
+                    //Do some processing (Eg: Strip of commit ISH)
+                    var Matches = Regex.Matches(strResult, @"^.*?\s+(.*)$", RegexOptions.Multiline);
+                    foreach (Match match in Matches)
+                    {
+                        if (match.Groups.Count < 2)
+                            continue;
+                        m_lstNonFilteredCommitMessages.Add(match.Groups[1].Value);
+                    }
+                }
+            }
+
+            // Update the views
+
+            // Remove any notice of commits/filters on the screen controls
+            grpBoxCommitMessages.Text = grpBoxCommitMessages.Text.Replace(" --- (filtered)", "");
+            toolTipCommitMessages.SetToolTip(grpBoxCommitMessages, "");
+            txtCommitMessages.Text = "";
+
+            //Try catch to handle the case where regexes are (still) invalid or incomplete
+            try
+            {
+                //Filter the complete list of commit messages with filters the user has entered
+                StringBuilder finalStr = new StringBuilder();
+                StringBuilder finalStrFiltered = new StringBuilder();
+                List<string> lstCommitMessageIgnoreRegexes = this.CommitMessageIgnoreRegexes;
+                foreach (string Line in m_lstNonFilteredCommitMessages)
+                {
+                    bool bValid = true;
+                    int nRegexesCount = lstCommitMessageIgnoreRegexes.Count;
+                    while (bValid && --nRegexesCount >= 0)
+                    {
+                        //First bValid just tells us if we match
+                        bValid = Regex.Match(Line, lstCommitMessageIgnoreRegexes[nRegexesCount], chkIgnoreCaseForRegex.Checked ? RegexOptions.IgnoreCase : RegexOptions.None).Success;
+
+                        if (!chkInclusiveRegex.Checked)
+                            bValid = !bValid; //Invert matched => In case of exclusive not matched is good!
+                    }
+
+                    if (bValid)
+                        finalStr.AppendFormat(@"{0}{1}", Line, System.Environment.NewLine);
+                    else
+                        finalStrFiltered.AppendFormat(@"{0}{1}", Line, System.Environment.NewLine);
+                }
+
+                if (finalStrFiltered.Length > 0)
+                {
+                    //Filters active => Set tooltip & changed titles
+                    if (grpBoxCommitMessages.Text.IndexOf(" --- (filtered)") < 0)
+                        grpBoxCommitMessages.Text = grpBoxCommitMessages.Text + " --- (filtered)";
+                    toolTipCommitMessages.SetToolTip(grpBoxCommitMessages, finalStrFiltered.ToString());
+                }
+
+                //Show the differences
+                txtCommitMessages.Text = finalStr.ToString();
+            }
+            catch (Exception)
+            { }
+        }
+
+        //Version history filtering
+        private void txtCommitMessagesFilters_TextChanged(object sender, EventArgs e)
+        {
+            SyncCommitMessages();
+        }
+        private void chkRegexOption_CheckedChanged(object sender, EventArgs e)
+        {
+            SyncCommitMessages();
+        }
+        private void txtCurVersionHistory_TextChanged(object sender, EventArgs e)
+        {
+            if (dataGridViewVersionHist.SelectedCells.Count > 0)
+            {
+                //Assure object cache
+                bool bHasTextOnScreen = !string.IsNullOrWhiteSpace(txtCurVersionHistory.Text);
+                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, dataGridViewVersionHist.SelectedCells[0].RowIndex].Value;
+                if (cache == null && bHasTextOnScreen)
+                {
+                    cache = new VersionHistoryCache(StaticTools.GetMainTrackVersionNumber((string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, dataGridViewVersionHist.SelectedCells[0].RowIndex].Value));
+                    dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, dataGridViewVersionHist.SelectedCells[0].RowIndex].Value = cache;
+                }
+
+                //Save text in cache
+                if (bHasTextOnScreen)
+                    cache.HistoryText = txtCurVersionHistory.Text;
+            }
+        }
+
+        //Data grid view events
+        private void dataGridViewVersionHist_SelectionChanged(object sender, EventArgs e)
+        {
+            m_nVHCurrentSelectedVersionRow = -1;
+            if (dataGridViewVersionHist.SelectedCells.Count > 0)
+                m_nVHCurrentSelectedVersionRow = dataGridViewVersionHist.SelectedCells[0].RowIndex;
+
+            SyncVersionHistory();
+            SyncCommitMessages();
+
+            m_nVHPreviousSelectedVersionRow = m_nVHCurrentSelectedVersionRow;
+        }  
+        private void dataGridViewVersionHist_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (dataGridViewVersionHist.Rows.Count <= 0)
+                return; //No use if there are no rows
+
+           if (e.ColumnIndex == dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, 0].ColumnIndex)
+           {
+               if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                   contextVersionHistory.Show(Cursor.Position);
+           }
+        }
+        private void dataGridViewVersionHist_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dataGridViewVersionHist.Rows.Count)
+                return;
+
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                if (e.ColumnIndex == dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, e.RowIndex].ColumnIndex)
+                    contextVersionHistory.Show(Cursor.Position);
+            }
+        }
+
+        //Context menu's
+        private void ContextVersionHistory_GenerateMissingVersionFiles_Click(object sender, EventArgs e)
+        {
+            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
+            Point pointOnClient = dataGridViewVersionHist.PointToClient(pointOnScreen);
+            DataGridView.HitTestInfo info = dataGridViewVersionHist.HitTest(pointOnClient.X, pointOnClient.Y);
+
+            int nStartIndex = 0;
+            int nCount = dataGridViewVersionHist.Rows.Count;
+
+            //Check if specific row is selected
+            if (info.RowIndex > 0)
+            {
+                //We support only single row selection => hence we can take the first selected item
+                nStartIndex = info.RowIndex;
+                nCount = 1;
+            }
+
+            for (int nIndex = nStartIndex; nIndex < nStartIndex + nCount; nIndex++)
+            {
+                string strProductName = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, nIndex].Value;
+                string strVersion = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nIndex].Value;
+                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersion);
+                if (!MyForceReleaser.ProductHasVersionHistoryFile(_Model, strProductName, strTrack))
+                {
+                    VersionHistoryCache cache = new VersionHistoryCache(strTrack, MyForceReleaser.GetDemoMarkDown(strProductName, strVersion));
+                    dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nIndex].Value = cache;
+                }
+            }
+
+            if (nCount > 0)
+                SyncVersionHistory(true);
+        }
+        private void ContextVersionHistory_ReplaceNotYetReleasedWithCurrentDate_Click(object sender, EventArgs e)
+        {
+            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
+            Point pointOnClient = dataGridViewVersionHist.PointToClient(pointOnScreen);
+            DataGridView.HitTestInfo info = dataGridViewVersionHist.HitTest(pointOnClient.X, pointOnClient.Y);
+
+            int nStartIndex = 0;
+            int nCount = dataGridViewVersionHist.Rows.Count;
+
+            //Check if specific row is selected
+            if (info.RowIndex >= 0)
+            {
+                //We support only single row selection => hence we can take the first selected item
+                nStartIndex = info.RowIndex;
+                nCount = 1;
+            }
+
+            //Update the version history for the requested rows
+            for (int nRowIndex = nStartIndex; nRowIndex < nStartIndex + nCount; nRowIndex++)
+            {
+                VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value;
+                if (cache == null)
+                {
+                    //In case where the cache is missing we need to load the cache from disk
+                    cache = new VersionHistoryCache(StaticTools.GetMainTrackVersionNumber((string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nRowIndex].Value));
+                    cache.HistoryText = MyForceReleaser.ReadVersionHistoryFile(_Model, (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, nRowIndex].Value, StaticTools.GetMainTrackVersionNumber((string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nRowIndex].Value));
+                    dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value = cache;
+                }
+                if (!string.IsNullOrWhiteSpace(cache.HistoryText))
+                    cache.HistoryText = Regex.Replace(cache.HistoryText, @"\(not yet released\)", string.Format("({0})", DateTime.Now.ToString("dd/MM/yyyy")), RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            }
+            if (nCount > 0)
+                SyncVersionHistory(true);
+        }
+        private void ContextVersionHistory_ResetVersionFiles_Click(object sender, EventArgs e)
+        {
+            Point pointOnScreen = new Point(contextVersionHistory.Bounds.Location.X, contextVersionHistory.Bounds.Location.Y);
+            Point pointOnClient = dataGridViewVersionHist.PointToClient(pointOnScreen);
+            DataGridView.HitTestInfo info = dataGridViewVersionHist.HitTest(pointOnClient.X, pointOnClient.Y);
+
+            int nStartIndex = 0;
+            int nCount = dataGridViewVersionHist.Rows.Count;
+
+            //Check if specific row is selected
+            if (info.RowIndex > 0)
+            {
+                //We support only single row selection => hence we can take the first selected item
+                nStartIndex = info.RowIndex;
+                nCount = 1;
+            }
+
+            //Update the version history for the requested rows
+            for (int nRowIndex = nStartIndex; nRowIndex < nStartIndex + nCount; nRowIndex++)
+                dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, nRowIndex].Value = null;
+
+            if (nCount > 0)
+                SyncVersionHistory(true);
+        }
+        
+        #endregion
+
         #region Shared Tab Logic
         public void LoadProducts()
         {
-            dataGridViewProducts.SelectionChanged -= dataGridViewProducts_SelectionChanged;
+            dataGridViewVersionHist.SelectionChanged -= dataGridViewVersionHist_SelectionChanged;
 
             //Clear the current products
             dataGridViewProducts.Rows.Clear();
             dataGridViewReleases.Rows.Clear();
+            dataGridViewVersionHist.Rows.Clear();
 
             //Load all available tags
             string strAllTags = MyForceReleaser.GetTags(_Model);
@@ -796,9 +807,10 @@ namespace MyForceReleaser
                         string strNextVersion = StaticTools.IncrementVersionNumber(versionNumber);
 
                         //Verify if the tag already exists => if not this product is ready to release
+                        int nNewRowIndex = 0;
                         if (bRetrievedFromTag || !Regex.Match(strAllTags, "refs/tags/" + ProductName + "-v?" + versionNumber + @"\^{}").Success)
                         {
-                            int nNewRowIndex = dataGridViewReleases.Rows.Add();
+                            nNewRowIndex = dataGridViewReleases.Rows.Add();
                             dataGridViewReleases[RELEASE_COL_PRODUCT, nNewRowIndex].Value = ProductName;
                             dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, nNewRowIndex].Value = bRetrievedFromTag ? strNextVersion : versionNumber;
                             dataGridViewReleases[RELEASE_COL_RELEASE, nNewRowIndex].Value = !bRetrievedFromTag;
@@ -806,13 +818,19 @@ namespace MyForceReleaser
                         }
                         else
                         {
-                            int nNewRowIndex = dataGridViewProducts.Rows.Add();
+                            nNewRowIndex = dataGridViewProducts.Rows.Add();
                             dataGridViewProducts[PRODUCTS_COL_PRODUCT, nNewRowIndex].Value = ProductName;
                             dataGridViewProducts[PRODUCTS_COL_CURRENTVERSION, nNewRowIndex].Value = versionNumber;
                             dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, nNewRowIndex].Value = strNextVersion;
                             dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, nNewRowIndex].Value = false;
                             dataGridViewProducts[PRODUCTS_COL_VERSIONHISTORYUPDATED, nNewRowIndex].Value = false;
                         }
+
+                        //Fill the version history tab
+                        nNewRowIndex = dataGridViewVersionHist.Rows.Add();
+                        dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, nNewRowIndex].Value = ProductName;
+                        dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, nNewRowIndex].Value = versionNumber;
+                        dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, nNewRowIndex].Value = false;
                     }
 
                     //Warn the user not any version could be parsed
@@ -820,8 +838,8 @@ namespace MyForceReleaser
                         MessageBox.Show("Couldn't determine any version for <" + ProductName + ">. Releasing will work but not for this product!");
                 }
             }
-            dataGridViewProducts.SelectionChanged += dataGridViewProducts_SelectionChanged;
-            SyncVersionHistory();
+            dataGridViewVersionHist.SelectionChanged += dataGridViewVersionHist_SelectionChanged;
+            SyncVersionHistory(true);
         }
         private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, int nColumnIndexVersionToCheck, int nColumnIndexRowIdentifier = 0)
         {
@@ -841,6 +859,67 @@ namespace MyForceReleaser
             }
             return bValid;
         }
-        #endregion
+
+
+        #endregion        
+
+        private void tabMainWindow_Selected(object sender, TabControlEventArgs e)
+        {
+            if (e.Action == TabControlAction.Selected)
+            {
+                //Build debug string
+                string strInfo = string.Format("IsMasterBranch: {0}, IsFixBranch: {1}, IsVersionBranch: {2}",
+                  _Model.Git.IsCurrentBranchMaster() ? "true" : "false"
+                  , _Model.Git.IsCurrentBranchFixBranch() ? "true" : "false"
+                  , _Model.Git.IsCurrentBranchVersionBranch() ? "true" : "false"
+                );
+
+                //Check if tab is allowed
+                bool bForceOtherAllowedPage = false;
+                if (e.TabPage.Name.Equals(tabVersionHistory.Name) && !tabVersionHistory.Enabled)
+                {
+                    //Not allowed to update version history
+                    bForceOtherAllowedPage = true;
+                    MessageBox.Show(string.Format("It's not allowed to update version history directly on a version branch! Please use the fix branches (or master for a new track)! {0}Info for developper: {1}"
+                        , System.Environment.NewLine
+                        , strInfo));
+                }
+                else if (e.TabPage.Name.Equals(tabReleasing.Name) && !tabReleasing.Enabled)
+                {
+                    //Not allowed to release from current branch
+                    bForceOtherAllowedPage = true;
+                    MessageBox.Show(string.Format("It's only allowed to release from a version branch! {0}Info for the developper: {1}"
+                        , System.Environment.NewLine
+                        , strInfo));
+                }
+                else if (e.TabPage.Name.Equals(tabVersions.Name) && !tabVersions.Enabled)
+                {
+                    //Not allowed to update version on current branch
+                    bForceOtherAllowedPage = true;
+                    MessageBox.Show(string.Format("It's only allowed to update versions on a version or a master branch! {0}Info for the developper: {1}"
+                        , System.Environment.NewLine
+                        , strInfo));
+                };
+
+                if (bForceOtherAllowedPage)
+                {
+                    bool bFoundPage = false;
+                    int nIndex = 0;
+                    while (!bFoundPage && nIndex < tabMainWindow.TabPages.Count)
+                    {
+                        bFoundPage = tabMainWindow.TabPages[nIndex].Enabled;
+                        nIndex++;
+                    }
+
+                    if (bFoundPage)
+                        tabMainWindow.SelectedTab = tabMainWindow.TabPages[--nIndex];
+                    else
+                    {
+                        MessageBox.Show("Unexpected error during tab selection!");
+                        Close();
+                    }
+                }
+            }
+        }
     }
 }
