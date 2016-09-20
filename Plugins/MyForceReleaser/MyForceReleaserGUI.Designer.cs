@@ -80,6 +80,7 @@
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
             this.btnUpdateVersionHistory = new System.Windows.Forms.Button();
+            this.chkShowLogOnExit = new System.Windows.Forms.CheckBox();
             this.contextVersionToSet.SuspendLayout();
             this.contextShouldUpdateVersions.SuspendLayout();
             this.tabReleasing.SuspendLayout();
@@ -139,9 +140,9 @@
             // 
             this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(94, 3);
+            this.progressBar.Location = new System.Drawing.Point(204, 3);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(909, 23);
+            this.progressBar.Size = new System.Drawing.Size(799, 23);
             this.progressBar.TabIndex = 4;
             // 
             // contextShouldUpdateVersions
@@ -616,11 +617,22 @@
             this.btnUpdateVersionHistory.UseVisualStyleBackColor = true;
             this.btnUpdateVersionHistory.Click += new System.EventHandler(this.UpdateVersionHistory_Click);
             // 
+            // chkShowLogOnExit
+            // 
+            this.chkShowLogOnExit.AutoSize = true;
+            this.chkShowLogOnExit.Location = new System.Drawing.Point(94, 7);
+            this.chkShowLogOnExit.Name = "chkShowLogOnExit";
+            this.chkShowLogOnExit.Size = new System.Drawing.Size(104, 17);
+            this.chkShowLogOnExit.TabIndex = 5;
+            this.chkShowLogOnExit.Text = "Show log on exit";
+            this.chkShowLogOnExit.UseVisualStyleBackColor = true;
+            // 
             // MyForceReleaserGUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1018, 533);
+            this.Controls.Add(this.chkShowLogOnExit);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.btnSettings);
             this.Controls.Add(this.tabMainWindow);
@@ -658,6 +670,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
             this.flowLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -714,6 +727,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colVHInternalVersionHistory;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
         private System.Windows.Forms.Button btnUpdateVersionHistory;
+        private System.Windows.Forms.CheckBox chkShowLogOnExit;
 
     }
 }

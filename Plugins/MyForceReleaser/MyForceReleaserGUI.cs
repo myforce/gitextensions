@@ -49,6 +49,15 @@ namespace MyForceReleaser
             _Model.CommitMessageIgnoreRegexes = this.CommitMessageIgnoreRegexes;            
         }
 
+        public bool ShowLogRequested()
+        {
+            return chkShowLogOnExit.Checked;
+        }
+        public void SetShowLogRequested(bool bValue)
+        {
+            chkShowLogOnExit.Checked = bValue;
+        }
+
         //Regulate settings
         private void btnSettings_Click(object sender, EventArgs e)
         {
@@ -128,12 +137,19 @@ namespace MyForceReleaser
         //Actions
         private void UpdateVersionNumbers_Click(object sender, EventArgs e)
         {
+            Logger.GetLogger().LogMessage("UpdateVersionNumbers: Start");
+
             if (dataGridViewProducts.Rows.Count < 0)
+            {
+                Logger.GetLogger().LogMessage("UpdateVersionNumbers: No rows available!");
                 return; //No use to update rows
+            }
 
             if (!ValidateVersionNumbersInColumn(ref dataGridViewProducts, dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, 0].ColumnIndex))
+            {
+                Logger.GetLogger().LogMessage("UpdateVersionNumbers: End");
                 return;
-
+            }
             int nProductsFoundToRelease = 0;
             
             //Load the resource files for each valid product
@@ -142,7 +158,10 @@ namespace MyForceReleaser
 
             MyForceReleaser.LoadResourceMapsForValidProducts(_Model, ref ResourceFilesForProducts, ref SqlFilesForProducs);
             if (ResourceFilesForProducts.Count <= 0 && SqlFilesForProducs.Count <= 0)
+            {
+                Logger.GetLogger().LogMessage("UpdateVersionNumbers: End");
                 return; //Already notified so just abort once here
+            }
 
             //Change all version numbers
             List<PowerShell> lstToExecute = new List<PowerShell>();
@@ -150,30 +169,54 @@ namespace MyForceReleaser
             {
                 string strProduct = (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, RowIndex].Value;
                 string strVersionToSet = (string)dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, RowIndex].Value;
-                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersionToSet);
+                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersionToSet);                
                 
                 if ((bool)dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, RowIndex].Value)
                 {
+                    StringBuilder strbLogCommand = new StringBuilder();
+
                     nProductsFoundToRelease++;
                     PowerShell ps = StaticTools.GetWriteHostDisabledPowershell();
 
+                    strbLogCommand.Append("\"" + System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]) + "\" ");
                     ps.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]));
+
+                    strbLogCommand.AppendFormat("-Directory {0} ", _Model.Git.GetWorkingDir().TrimEnd('\\'));
                     ps.AddParameter("Directory", _Model.Git.GetWorkingDir().TrimEnd('\\'));
+                    
+                    strbLogCommand.AppendFormat("-Version {0} ", strVersionToSet);
                     ps.AddParameter("Version", strVersionToSet);
+
+                    strbLogCommand.Append("-DisableChecks:$true ");
                     ps.AddParameter("DisableChecks", true);
+
                     if (ResourceFilesForProducts.ContainsKey(strProduct))
+                    {
+                        strbLogCommand.AppendFormat("-IncludeList: {0} ", string.Join("," , ResourceFilesForProducts[strProduct].ToArray()));
                         ps.AddParameter("IncludeList", ResourceFilesForProducts[strProduct]);
+                    }
 
                     if (SqlFilesForProducs.ContainsKey(strProduct))
+                    {
+                        strbLogCommand.AppendFormat("-SqlList: {0} ", string.Join(",", SqlFilesForProducs[strProduct].ToArray()));
                         ps.AddParameter("SqlList", SqlFilesForProducs[strProduct]);
+                    }
+
+                    Logger.GetLogger().LogMessage(string.Format("UpdateVersionNumbers: Product <{0}> marked for update versions execute command <{1}> "
+                        , strProduct
+                        , strbLogCommand.ToString()));
                     
                     lstToExecute.Add(ps);
-                }
+                } else
+                    Logger.GetLogger().LogMessage("UpdateVersionNumbers: Product not marked for update of its versions => " + strProduct);
+
             }
 
             if (nProductsFoundToRelease <= 0)
             {
-                MessageBox.Show("No products checked to update the version numbers!");
+                string strError = "No products checked to update the version numbers!";
+                MessageBox.Show(strError);
+                Logger.GetLogger().LogMessage("UpdateVersionNumbers: " + strError);
                 return;
             }
 
@@ -194,18 +237,17 @@ namespace MyForceReleaser
             {
                 progressBar.Visible = false;
                 MessageBox.Show(ex.Message);
+                Logger.GetLogger().LogMessage("UpdateVersionNumbers: " + ex.Message);
                 return;
-            }
-            finally 
-            { 
-                //runspace.Close(); 
             }
 
             //Commit the changes
+            Logger.GetLogger().LogMessage("UpdateVersionNumbers: Commit changes");
             _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version numbers for release\"");
             MessageBox.Show(string.Format("{0}/{1} program versions are updated. Please verify them and then re-open this plugin to actually release the programs!", nProductsFoundToRelease, dataGridViewProducts.Rows.Count));
 
             //Close the GUI so user can verify his actions
+            Logger.GetLogger().LogMessage("UpdateVersionNumbers: Done");
             Close();
         }
         private void dataGridViewProducts_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -304,13 +346,20 @@ namespace MyForceReleaser
         //Actions
         private void ReleasePrograms_Click(object sender, EventArgs e)
         {
+            Logger.GetLogger().LogMessage("ReleasePrograms: Start");
             if (dataGridViewReleases.RowCount <= 0)
+            {
+                Logger.GetLogger().LogMessage("ReleasePrograms: No rows in the gui...");
                 return; //No use to release nothing
+            }
 
             bool ProductsFoundToRelease = false;
 
             if (!ValidateVersionNumbersInColumn(ref dataGridViewReleases, dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, 0].ColumnIndex))
+            {
+                Logger.GetLogger().LogMessage("ReleasePrograms: End");
                 return;
+            }
 
             //Change all version numbers
             //bool DoDummyCommitSinceOnlyTagBasedRelease = true;
@@ -323,27 +372,53 @@ namespace MyForceReleaser
                     //if (!((bool)dataGridViewReleases[3, RowIndex].Value))
                     //    DoDummyCommitSinceOnlyTagBasedRelease = false; //We have program that actually has changed resources
                     ProductsFoundToRelease = true;
+                    Logger.GetLogger().LogMessage(string.Format("ReleasePrograms: Product <{0}> marked for release", strProduct));
 
-                    PowerShell psTag = StaticTools.GetWriteHostDisabledPowershell();
+                    StringBuilder strbLogCommand = new StringBuilder();
+
+                    PowerShell psTag = StaticTools.GetWriteHostDisabledPowershell();                    
+                    strbLogCommand.AppendFormat("\"{0}\" ", System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
                     psTag.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
                     psTag.Runspace.SessionStateProxy.Path.SetLocation(_Model.Git.GetWorkingDir().TrimEnd('\\'));
+
+                    strbLogCommand.AppendFormat("-ProductNames {0} ", strProduct);
                     psTag.AddParameter("ProductNames", strProduct);
+
+                    strbLogCommand.AppendFormat("-Version {0} ", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
                     psTag.AddParameter("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
+
                     lstToExecute.Add(psTag);
+                    strbLogCommand.Append(System.Environment.NewLine);
 
                     PowerShell psPush = StaticTools.GetWriteHostDisabledPowershell();
+                    strbLogCommand.AppendFormat("\"{0}\" ", System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
                     psPush.Runspace.SessionStateProxy.Path.SetLocation(_Model.Git.GetWorkingDir().TrimEnd('\\'));
                     psPush.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
+
+                    strbLogCommand.AppendFormat("-ProductNames {0} ", strProduct);
                     psPush.AddParameter("ProductNames", strProduct);
+
+                    strbLogCommand.AppendFormat("-Version {0} ", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
                     psPush.AddParameter("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
+
+                    strbLogCommand.Append("-Push=$true");
                     psPush.AddParameter("Push", true);
+
                     lstToExecute.Add(psPush);
-                }
+
+                    Logger.GetLogger().LogMessage(string.Format("ReleasePrograms: Product <{0}> marked for release execute command <{1}>"
+                        , strProduct
+                        , strbLogCommand.ToString()));
+                } 
+                else
+                    Logger.GetLogger().LogMessage(string.Format("ReleasePrograms: Product <{0}> isn't marked for release", strProduct));
             }
 
             if (!ProductsFoundToRelease)
             {
-                MessageBox.Show("No products checked to release!");
+                string strWarning = "No products checked to release!";
+                MessageBox.Show(strWarning);
+                Logger.GetLogger().LogMessage(string.Format("ReleasePrograms: {0}", strWarning), Logger.LogType.lt_warning);
                 return;
             }
 
@@ -381,11 +456,12 @@ namespace MyForceReleaser
             {
                 MessageBox.Show(ex.Message);
                 progressBar.Visible = false;
+                Logger.GetLogger().LogMessage(string.Format("ReleasePrograms: {0}", ex.Message), Logger.LogType.lt_error);
                 return;
             }
 
             MessageBox.Show("Programs are released!");
-
+            Logger.GetLogger().LogMessage("ReleasePrograms: Done");
             //Close the GUI
             Close();
         }
@@ -415,8 +491,13 @@ namespace MyForceReleaser
 
         private void UpdateVersionHistory_Click(object sender, EventArgs e)
         {
+            Logger.GetLogger().LogMessage("UpdateVersionHistory: Start");
+
             if (dataGridViewVersionHist.Rows.Count < 0)
+            {
+                Logger.GetLogger().LogMessage("UpdateVersionHistory: No rows in the view... Stop pushing the damn button!");
                 return; //No use to update rows
+            }
 
             int nVersionHistoriesUpdated = 0;
 
@@ -429,21 +510,27 @@ namespace MyForceReleaser
             {
                 string strProduct = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_PRODUCT, RowIndex].Value;
                 string strVersionToSet = (string)dataGridViewVersionHist[VERSIONHISTORY_COL_CURRENTVERSION, RowIndex].Value;
-                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersionToSet);               
+                string strTrack = StaticTools.GetMainTrackVersionNumber(strVersionToSet);
 
                 //Check if we need to save the version history file
                 VersionHistoryCache cache = (VersionHistoryCache)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORY, RowIndex].Value;
                 if ((bool)dataGridViewVersionHist[VERSIONHISTORY_COL_VERSIONHISTORYUPDATED, RowIndex].Value && cache != null && cache.Version.Equals(strTrack))
                 {
+                    Logger.GetLogger().LogMessage(string.Format("UpdateVersionHistory: {0} Version history changed!", strProduct));
                     MyForceReleaser.SaveVersionHistoryFile(_Model, strProduct, strTrack, cache.HistoryText);
                     nVersionHistoriesUpdated++;
                 }
+                else
+                    Logger.GetLogger().LogMessage(string.Format("UpdateVersionHistory: {0} Version history not changed!", strProduct));
             }
             MessageBox.Show(string.Format("{0}/{1} version history files have changed and are saved.", nVersionHistoriesUpdated, dataGridViewVersionHist.Rows.Count));
 
             //Commit the changes
+            Logger.GetLogger().LogMessage("UpdateVersionHistory: Adding files & commit changes!");
             _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
             _Model.Git.RunGitCmd("commit -am \"GitExtensions MyForce Releaser Plugin: Updated version history\"");
+
+            Logger.GetLogger().LogMessage("UpdateVersionHistory: Done");
 
             //Close the GUI so user can verify his actions
             Close();
@@ -854,8 +941,10 @@ namespace MyForceReleaser
 
             if (!bValid && nRowIndex >= 0 && nRowIndex < gridView.Rows.Count)
             {
-                MessageBox.Show("Invalid version number <" + gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString()
-                    + "> found for <" + gridView[nColumnIndexRowIdentifier, nRowIndex].Value.ToString() + ">!");
+                string strError = "Invalid version number <" + gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString()
+                    + "> found for <" + gridView[nColumnIndexRowIdentifier, nRowIndex].Value.ToString() + ">!";
+                MessageBox.Show(strError);
+                Logger.GetLogger().LogMessage("ValidateVersionNumbersInColumn: " + strError);
             }
             return bValid;
         }
@@ -881,7 +970,7 @@ namespace MyForceReleaser
                     //Not allowed to update version history
                     bForceOtherAllowedPage = true;
                     MessageBox.Show(string.Format("It's not allowed to update version history directly on a version branch! Please use the fix branches (or master for a new track)! {0}Info for developper: {1}"
-                        , System.Environment.NewLine
+                        , System.Environment.NewLine + System.Environment.NewLine
                         , strInfo));
                 }
                 else if (e.TabPage.Name.Equals(tabReleasing.Name) && !tabReleasing.Enabled)
@@ -889,7 +978,7 @@ namespace MyForceReleaser
                     //Not allowed to release from current branch
                     bForceOtherAllowedPage = true;
                     MessageBox.Show(string.Format("It's only allowed to release from a version branch! {0}Info for the developper: {1}"
-                        , System.Environment.NewLine
+                        , System.Environment.NewLine + System.Environment.NewLine
                         , strInfo));
                 }
                 else if (e.TabPage.Name.Equals(tabVersions.Name) && !tabVersions.Enabled)
@@ -897,7 +986,7 @@ namespace MyForceReleaser
                     //Not allowed to update version on current branch
                     bForceOtherAllowedPage = true;
                     MessageBox.Show(string.Format("It's only allowed to update versions on a version or a master branch! {0}Info for the developper: {1}"
-                        , System.Environment.NewLine
+                        , System.Environment.NewLine + System.Environment.NewLine
                         , strInfo));
                 };
 

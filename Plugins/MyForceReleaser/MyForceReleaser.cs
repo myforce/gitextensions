@@ -75,11 +75,12 @@ namespace MyForceReleaser
         }
         public static void SaveVersionHistoryFile(MyForceReleaser _Model, string strProduct, string strRequestedTrack, string strCurrentText)
         {
-            strProduct = GetVersionHistoryFilePathForProduct(_Model, strProduct, strRequestedTrack);
-            if (System.IO.File.Exists(strProduct))
-                System.IO.File.Delete(strProduct);
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(strProduct));
-            System.IO.File.WriteAllText(strProduct, strCurrentText);
+            string strProductPath = GetVersionHistoryFilePathForProduct(_Model, strProduct, strRequestedTrack);
+            Logger.GetLogger().LogMessage(string.Format("SaveVersionHistoryFile: {0} => {1}", strProduct, strProductPath));
+            if (System.IO.File.Exists(strProductPath))
+                System.IO.File.Delete(strProductPath);
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(strProductPath));
+            System.IO.File.WriteAllText(strProductPath, strCurrentText);
         }
         public static bool ProductHasVersionHistoryFile(MyForceReleaser _Model, string strProduct, string strRequestedTrack)
         {

@@ -41,11 +41,12 @@ namespace MyForceReleaser
                     break;
             }
 
-            _ErrorLog.AppendFormat("{0,-12}{1,-10}L{2,-2} {3}"
+            _ErrorLog.AppendFormat("{0,-12}{1,-10}L{2,-2} {3}{4}"
                 , DateTime.Now.ToString("hh:mm:ss")
                 , strType
                 , nLevel
                 , strToLog
+                ,System.Environment.NewLine
                 );
         }
 
