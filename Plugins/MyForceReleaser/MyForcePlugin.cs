@@ -23,6 +23,7 @@ namespace MyForceReleaser
         #region Settings
         private StringSetting settingInternalRepoPath = new StringSetting("Path to internal repository", "");
         private StringSetting settingCommitMessageIgnoreRegexes = new StringSetting("Commit message ignore regexes", "");
+        private BoolSetting settingShowLogOnExit = new BoolSetting("Show log on exit value", false);
         #endregion
 
         public MyForceReleaserPlugin()
@@ -77,18 +78,30 @@ namespace MyForceReleaser
 
             Logger.GetLogger().LogMessage("Startup: Done");
             Logger.GetLogger().LogMessage("Startup: Starting GUI");
+            
             using (var releaserStart = new MyForceReleaserGUI(Model))
             {
+                releaserStart.SetShowLogRequested(settingShowLogOnExit[Settings].GetValueOrDefault(false));
                 releaserStart.ShowDialog(ownerForm);
+                Settings.SetBool(settingShowLogOnExit.Name, releaserStart.ShowLogRequested());
+               
             }
 
             Logger.GetLogger().LogMessage("Shutdown: storing settings");
 
             Logger.GetLogger().LogMessage(string.Format("Shutdown: storing repo path <{0}>", Model.InternalRepositoryPath));
-            Settings.SetValue<string>(settingInternalRepoPath.Name, Model.InternalRepositoryPath, s => s);
+            Settings.SetString(settingInternalRepoPath.Name, Model.InternalRepositoryPath);
 
             Logger.GetLogger().LogMessage(string.Format("Shutdown: storing regexes for the version history commits window <{0}>", string.Join(",", Model.CommitMessageIgnoreRegexes.ToArray())));
-            Settings.SetValue<string>(settingCommitMessageIgnoreRegexes.Name, StaticTools.Serialize<List<string>>(Model.CommitMessageIgnoreRegexes), s => s);
+            Settings.SetString(settingCommitMessageIgnoreRegexes.Name, StaticTools.Serialize<List<string>>(Model.CommitMessageIgnoreRegexes));
+
+            Settings.SetString(settingInternalRepoPath.Name, Model.InternalRepositoryPath);
+            if (settingShowLogOnExit[Settings].GetValueOrDefault(false))
+            {
+                string strPath = System.IO.Path.GetTempFileName().Replace(".tmp", ".txt"); ;
+                System.IO.File.WriteAllText(strPath, Logger.GetLogger().GetLog());
+                System.Diagnostics.Process.Start(strPath);
+            }
             return true;
         }        
     }
