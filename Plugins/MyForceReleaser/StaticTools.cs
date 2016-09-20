@@ -406,6 +406,22 @@ namespace MyForceReleaser
         #endregion
 
         #region CommandLine
+        public static System.Management.Automation.PowerShell GetWriteHostDisabledPowershell()
+        {
+            System.Management.Automation.PowerShell ps = System.Management.Automation.PowerShell.Create();
+            ps.AddScript("$script:write_host_not_reported = $true;\n"
+                             + "function Write-Host {\n"
+                             + "  if ($script:write_host_not_reported) {\n"
+                             + "    Write-Warning \"Don't use Write-Host. http://www.jsnover.com/blog/2013/12/07/write-host-considered-harmful/ \";\n"
+                             + "    $script:write_host_not_reported = $false;\n"
+                             + "  }\n"
+                             + "  Write-Warning @Args;\n"
+                             + "}\n");
+            ps.Invoke();
+            ps.Commands.Clear();
+            return ps;
+        }
+
         private static Dictionary<int, StringBuilder> ProcessOutCapture = new Dictionary<int, StringBuilder>();
         private static Dictionary<int, StringBuilder> ProcessErrCapture = new Dictionary<int, StringBuilder>();
         public static int ExecuteCommand(string strProgram, string strArguments, string strWorkingDir, ref string strOutputLog, ref string strErrorOutputLog, bool bOverwriteFile = true, bool bLogIntoOutputAndErrorVariablesInsteadOfToFile = false)

@@ -143,7 +143,7 @@ namespace MyForceReleaser
             dataGridViewProducts_SelectionChanged(null, new EventArgs());
 
             //Change all version numbers
-            List<Command> lstToExecute = new List<Command>();
+            List<PowerShell> lstToExecute = new List<PowerShell>();
             for (int RowIndex = 0; RowIndex < dataGridViewProducts.Rows.Count; RowIndex++)
             {
                 string strProduct = (string)dataGridViewProducts[PRODUCTS_COL_PRODUCT, RowIndex].Value;
@@ -153,17 +153,19 @@ namespace MyForceReleaser
                 if ((bool)dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, RowIndex].Value)
                 {
                     nProductsFoundToRelease++;
-                    Command cmd = new Command("& \"" + System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]) + "\"");
-                    cmd.Parameters.Add("Directory", _Model.Git.GetWorkingDir().TrimEnd('\\'));
-                    cmd.Parameters.Add("Version", strVersionToSet);
-                    cmd.Parameters.Add("DisableChecks", true);
+                    PowerShell ps = StaticTools.GetWriteHostDisabledPowershell();
+
+                    ps.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CHANGEVERSIONS]));
+                    ps.AddParameter("Directory", _Model.Git.GetWorkingDir().TrimEnd('\\'));
+                    ps.AddParameter("Version", strVersionToSet);
+                    ps.AddParameter("DisableChecks", true);
                     if (ResourceFilesForProducts.ContainsKey(strProduct))
-                        cmd.Parameters.Add("IncludeList", ResourceFilesForProducts[strProduct]);
+                        ps.AddParameter("IncludeList", ResourceFilesForProducts[strProduct]);
 
                     if (SqlFilesForProducs.ContainsKey(strProduct))
-                        cmd.Parameters.Add("SqlList", SqlFilesForProducs[strProduct]);
-
-                    lstToExecute.Add(cmd);
+                        ps.AddParameter("SqlList", SqlFilesForProducs[strProduct]);
+                    
+                    lstToExecute.Add(ps);
                 }
 
                 //Check if we need to save the version history file
@@ -198,19 +200,15 @@ namespace MyForceReleaser
             }
 
             // Create a runspace to host the PowerScript environment:
-            Runspace runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
-            runspace.Open();
             try
             {
                 progressBar.Visible = true;
                 progressBar.Value = 0;
                 progressBar.Maximum = lstToExecute.Count;
-                foreach (var cmd in lstToExecute)
+                foreach (var ps in lstToExecute)
                 {
-                    Pipeline pipeline = runspace.CreatePipeline();
-                    pipeline.Commands.Add(cmd);
                     progressBar.Increment(1);
-                    pipeline.Invoke();
+                    ps.Invoke();
                 }
                 progressBar.Visible = false;
             }
@@ -220,7 +218,10 @@ namespace MyForceReleaser
                 MessageBox.Show(ex.Message);
                 return;
             }
-            finally { runspace.Close(); }
+            finally 
+            { 
+                //runspace.Close(); 
+            }
 
             //Commit the changes
             _Model.Git.RunGitCmd(string.Format("add \"{0}\"/", MyForceReleaser.GetVersionHistoryRelativeRootFolder()));
@@ -667,7 +668,7 @@ namespace MyForceReleaser
 
             //Change all version numbers
             //bool DoDummyCommitSinceOnlyTagBasedRelease = true;
-            List<Command> lstToExecute = new List<Command>();
+            List<PowerShell> lstToExecute = new List<PowerShell>();
             for (int RowIndex = 0; RowIndex < dataGridViewReleases.Rows.Count; RowIndex++)
             {
                 string strProduct = (string)dataGridViewReleases[RELEASE_COL_PRODUCT, RowIndex].Value;
@@ -677,16 +678,20 @@ namespace MyForceReleaser
                     //    DoDummyCommitSinceOnlyTagBasedRelease = false; //We have program that actually has changed resources
                     ProductsFoundToRelease = true;
 
-                    Command cmdTag = new Command(System.IO.Path.Combine("& \"" + _Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]) + "\"");
-                    cmdTag.Parameters.Add("ProductNames", strProduct);
-                    cmdTag.Parameters.Add("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
-                    lstToExecute.Add(cmdTag);
+                    PowerShell psTag = StaticTools.GetWriteHostDisabledPowershell();
+                    psTag.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
+                    psTag.Runspace.SessionStateProxy.Path.SetLocation(_Model.Git.GetWorkingDir().TrimEnd('\\'));
+                    psTag.AddParameter("ProductNames", strProduct);
+                    psTag.AddParameter("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
+                    lstToExecute.Add(psTag);
 
-                    Command cmdPush = new Command(System.IO.Path.Combine("& \"" + _Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]) + "\"");
-                    cmdPush.Parameters.Add("ProductNames", strProduct);
-                    cmdPush.Parameters.Add("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
-                    cmdPush.Parameters.Add("Push", true);
-                    lstToExecute.Add(cmdPush);
+                    PowerShell psPush = StaticTools.GetWriteHostDisabledPowershell();
+                    psPush.Runspace.SessionStateProxy.Path.SetLocation(_Model.Git.GetWorkingDir().TrimEnd('\\'));
+                    psPush.AddCommand(System.IO.Path.Combine(_Model.InternalRepositoryPath, MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_CREATETAG]));
+                    psPush.AddParameter("ProductNames", strProduct);
+                    psPush.AddParameter("Version", (string)dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, RowIndex].Value);
+                    psPush.AddParameter("Push", true);
+                    lstToExecute.Add(psPush);
                 }
             }
 
@@ -695,11 +700,6 @@ namespace MyForceReleaser
                 MessageBox.Show("No products checked to release!");
                 return;
             }
-
-            // Create a runspace to host the PowerScript environment:
-            Runspace runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
-            runspace.Open();
-            runspace.SessionStateProxy.Path.SetLocation(_Model.Git.GetWorkingDir().TrimEnd('\\'));
 
             try
             {
@@ -724,12 +724,10 @@ namespace MyForceReleaser
                 progressBar.Value = 0;
                 progressBar.Visible = true;
                 progressBar.Maximum = lstToExecute.Count;
-                foreach (var cmd in lstToExecute)
+                foreach (var ps in lstToExecute)
                 {
-                    Pipeline pipeline = runspace.CreatePipeline();
-                    pipeline.Commands.Add(cmd);
                     progressBar.Increment(1);
-                    pipeline.Invoke();
+                    ps.Invoke();
                 }
                 progressBar.Visible = false;
             }
@@ -739,7 +737,6 @@ namespace MyForceReleaser
                 progressBar.Visible = false;
                 return;
             }
-            finally { runspace.Close(); }
 
             MessageBox.Show("Programs are released!");
 
