@@ -155,6 +155,7 @@ namespace GitUI.CommandsDialogs
         private string _diffTabPageTitleBase = "";
 
         private readonly FormBrowseMenus _formBrowseMenus;
+        ConEmuControl terminal = null;
 #pragma warning disable 0414
         private readonly FormBrowseMenuCommands _formBrowseMenuCommands;
 #pragma warning restore 0414
@@ -1877,6 +1878,7 @@ namespace GitUI.CommandsDialogs
             }
 
             SetGitModule(this, new GitModuleEventArgs(module));
+            ChangeTerminalActiveFolder(path);
         }
 
         private void HistoryItemMenuClick(object sender, EventArgs e)
@@ -2178,7 +2180,7 @@ namespace GitUI.CommandsDialogs
                 return;
 
             var fileName = Path.Combine(Module.WorkingDir, (gitItem).FileName);
-            Clipboard.SetText(fileName.Replace('/', '\\'));
+            Clipboard.SetText(fileName.ToNativePath());
         }
 
         private void copyFilenameToClipboardToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -2524,7 +2526,7 @@ namespace GitUI.CommandsDialogs
                     {
                         string fileName = Path.Combine(Module.WorkingDir, item.FileName);
 
-                        fileList.Add(fileName.Replace('/', '\\'));
+                        fileList.Add(fileName.ToNativePath());
                     }
 
                     DataObject obj = new DataObject();
@@ -2619,7 +2621,7 @@ namespace GitUI.CommandsDialogs
             for (int i = 0; i < pathParts.Length; i++)
             {
                 string pathPart = pathParts[i];
-                string diffPathPart = pathPart.Replace("/", "\\");
+                string diffPathPart = pathPart.ToNativePath();
 
                 var currentFoundNode = currentNodes.Cast<TreeNode>().FirstOrDefault(a =>
                 {
@@ -3512,7 +3514,7 @@ namespace GitUI.CommandsDialogs
 	    /// </summary>
 	    private void FillTerminalTab()
 	    {
-		    if(!EnvUtils.RunningOnWindows())
+		    if(!EnvUtils.RunningOnWindows() || !Module.EffectiveSettings.Detailed.ShowConEmuTab.ValueOrDefault)
 			    return; // ConEmu only works on WinNT
 		    TabPage tabpage;
 		    string sImageKey = "Resources.IconConsole";
@@ -3521,7 +3523,6 @@ namespace GitUI.CommandsDialogs
 		    tabpage.ImageKey = sImageKey; // After adding page
 
 		    // Delay-create the terminal window when the tab is first selected
-		    ConEmuControl terminal = null;
 		    CommitInfoTabControl.Selecting += (sender, args) =>
 		    {
 			    if(args.TabPage != tabpage)
@@ -3562,6 +3563,23 @@ namespace GitUI.CommandsDialogs
 			    terminal.Start(startinfo);
 		    };
 	    }
+
+        public void ChangeTerminalActiveFolder(string path)
+        {
+            if (terminal == null || terminal.RunningSession == null || string.IsNullOrWhiteSpace(path))
+                return;
+
+            string posixPath;
+            if (PathUtil.TryConvertWindowsPathToPosix(path, out posixPath))
+            {
+                //Clear terminal line by sending 'backspace' characters
+                for (int i = 0; i < 10000; i++)
+                {
+                    terminal.RunningSession.WriteInputText("\b");
+                }
+                terminal.RunningSession.WriteInputText(@"cd " + posixPath + Environment.NewLine);
+            }
+        }
 
         /// <summary>
         /// Clean up any resources being used.
