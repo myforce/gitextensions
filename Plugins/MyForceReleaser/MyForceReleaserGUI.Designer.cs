@@ -73,14 +73,19 @@
             this.txtPreviousVersionHistory = new System.Windows.Forms.RichTextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.txtCurVersionHistory = new System.Windows.Forms.RichTextBox();
+            this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnUpdateVersionHistory = new System.Windows.Forms.Button();
             this.contextVersionHistory = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.generateMissingFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetVersionFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
-            this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
-            this.btnUpdateVersionHistory = new System.Windows.Forms.Button();
             this.chkShowLogOnExit = new System.Windows.Forms.CheckBox();
+            this.contextReleaseToSet = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.ContextRelease_SetAllVersionNumbers = new System.Windows.Forms.ToolStripMenuItem();
+            this.contextShouldRelease = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.contextVersionToSet.SuspendLayout();
             this.contextShouldUpdateVersions.SuspendLayout();
             this.tabReleasing.SuspendLayout();
@@ -107,9 +112,11 @@
             this.grpBoxCommitMessages.SuspendLayout();
             this.grpPreviousVersionHist.SuspendLayout();
             this.groupBox2.SuspendLayout();
+            this.flowLayoutPanel3.SuspendLayout();
             this.contextVersionHistory.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
-            this.flowLayoutPanel3.SuspendLayout();
+            this.contextReleaseToSet.SuspendLayout();
+            this.contextShouldRelease.SuspendLayout();
             this.SuspendLayout();
             // 
             // contextVersionToSet
@@ -117,12 +124,12 @@
             this.contextVersionToSet.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.setAllVersionNumbersToolStripMenuItem});
             this.contextVersionToSet.Name = "contextVersionNumbers";
-            this.contextVersionToSet.Size = new System.Drawing.Size(186, 26);
+            this.contextVersionToSet.Size = new System.Drawing.Size(197, 26);
             // 
             // setAllVersionNumbersToolStripMenuItem
             // 
             this.setAllVersionNumbersToolStripMenuItem.Name = "setAllVersionNumbersToolStripMenuItem";
-            this.setAllVersionNumbersToolStripMenuItem.Size = new System.Drawing.Size(185, 22);
+            this.setAllVersionNumbersToolStripMenuItem.Size = new System.Drawing.Size(196, 22);
             this.setAllVersionNumbersToolStripMenuItem.Text = "Set all version numbers";
             this.setAllVersionNumbersToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionToSet_SetAllVersionNumbers_Click);
             // 
@@ -151,19 +158,19 @@
             this.checkAllToolStripMenuItem,
             this.uncheckAllToolStripMenuItem});
             this.contextShouldUpdateVersions.Name = "contextCheckAll";
-            this.contextShouldUpdateVersions.Size = new System.Drawing.Size(128, 48);
+            this.contextShouldUpdateVersions.Size = new System.Drawing.Size(136, 48);
             // 
             // checkAllToolStripMenuItem
             // 
             this.checkAllToolStripMenuItem.Name = "checkAllToolStripMenuItem";
-            this.checkAllToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
+            this.checkAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
             this.checkAllToolStripMenuItem.Text = "Check all";
             this.checkAllToolStripMenuItem.Click += new System.EventHandler(this.ContextUpdateVersion_CheckAll_Click);
             // 
             // uncheckAllToolStripMenuItem
             // 
             this.uncheckAllToolStripMenuItem.Name = "uncheckAllToolStripMenuItem";
-            this.uncheckAllToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
+            this.uncheckAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
             this.uncheckAllToolStripMenuItem.Text = "Uncheck all";
             this.uncheckAllToolStripMenuItem.Click += new System.EventHandler(this.ContextUpdateVersion_UncheckAll_Click);
             // 
@@ -195,6 +202,7 @@
             this.dataGridViewReleases.Size = new System.Drawing.Size(979, 423);
             this.dataGridViewReleases.TabIndex = 1;
             this.dataGridViewReleases.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewReleases_CellContentClick);
+            this.dataGridViewReleases.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridViewReleases_ColumnHeaderMouseClick);
             // 
             // colReleaseProduct
             // 
@@ -428,7 +436,7 @@
             // 
             this.splitHistoryInfoWithVersionHistory.Panel2.Controls.Add(this.groupBox2);
             this.splitHistoryInfoWithVersionHistory.Size = new System.Drawing.Size(639, 423);
-            this.splitHistoryInfoWithVersionHistory.SplitterDistance = 200;
+            this.splitHistoryInfoWithVersionHistory.SplitterDistance = 199;
             this.splitHistoryInfoWithVersionHistory.TabIndex = 1;
             // 
             // splitCommitMessagesWithPrevHist
@@ -444,7 +452,7 @@
             // splitCommitMessagesWithPrevHist.Panel2
             // 
             this.splitCommitMessagesWithPrevHist.Panel2.Controls.Add(this.grpPreviousVersionHist);
-            this.splitCommitMessagesWithPrevHist.Size = new System.Drawing.Size(639, 200);
+            this.splitCommitMessagesWithPrevHist.Size = new System.Drawing.Size(639, 199);
             this.splitCommitMessagesWithPrevHist.SplitterDistance = 327;
             this.splitCommitMessagesWithPrevHist.TabIndex = 0;
             // 
@@ -457,7 +465,7 @@
             this.grpBoxCommitMessages.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpBoxCommitMessages.Location = new System.Drawing.Point(0, 0);
             this.grpBoxCommitMessages.Name = "grpBoxCommitMessages";
-            this.grpBoxCommitMessages.Size = new System.Drawing.Size(327, 200);
+            this.grpBoxCommitMessages.Size = new System.Drawing.Size(327, 199);
             this.grpBoxCommitMessages.TabIndex = 1;
             this.grpBoxCommitMessages.TabStop = false;
             this.grpBoxCommitMessages.Text = "Commit Messages";
@@ -510,7 +518,7 @@
             this.txtCommitMessages.Name = "txtCommitMessages";
             this.txtCommitMessages.ReadOnly = true;
             this.txtCommitMessages.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtCommitMessages.Size = new System.Drawing.Size(315, 134);
+            this.txtCommitMessages.Size = new System.Drawing.Size(315, 133);
             this.txtCommitMessages.TabIndex = 0;
             this.txtCommitMessages.Text = "";
             this.txtCommitMessages.WordWrap = false;
@@ -521,7 +529,7 @@
             this.grpPreviousVersionHist.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpPreviousVersionHist.Location = new System.Drawing.Point(0, 0);
             this.grpPreviousVersionHist.Name = "grpPreviousVersionHist";
-            this.grpPreviousVersionHist.Size = new System.Drawing.Size(308, 200);
+            this.grpPreviousVersionHist.Size = new System.Drawing.Size(308, 199);
             this.grpPreviousVersionHist.TabIndex = 0;
             this.grpPreviousVersionHist.TabStop = false;
             this.grpPreviousVersionHist.Text = "Previous Track Version History";
@@ -534,7 +542,7 @@
             this.txtPreviousVersionHistory.Name = "txtPreviousVersionHistory";
             this.txtPreviousVersionHistory.ReadOnly = true;
             this.txtPreviousVersionHistory.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtPreviousVersionHistory.Size = new System.Drawing.Size(302, 181);
+            this.txtPreviousVersionHistory.Size = new System.Drawing.Size(302, 180);
             this.txtPreviousVersionHistory.TabIndex = 0;
             this.txtPreviousVersionHistory.Text = "";
             this.txtPreviousVersionHistory.WordWrap = false;
@@ -545,7 +553,7 @@
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(639, 219);
+            this.groupBox2.Size = new System.Drawing.Size(639, 220);
             this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Current Track Version History";
@@ -557,45 +565,11 @@
             this.txtCurVersionHistory.Location = new System.Drawing.Point(3, 16);
             this.txtCurVersionHistory.Name = "txtCurVersionHistory";
             this.txtCurVersionHistory.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth;
-            this.txtCurVersionHistory.Size = new System.Drawing.Size(633, 200);
+            this.txtCurVersionHistory.Size = new System.Drawing.Size(633, 201);
             this.txtCurVersionHistory.TabIndex = 0;
             this.txtCurVersionHistory.Text = "";
             this.txtCurVersionHistory.WordWrap = false;
             this.txtCurVersionHistory.TextChanged += new System.EventHandler(this.txtCurVersionHistory_TextChanged);
-            // 
-            // contextVersionHistory
-            // 
-            this.contextVersionHistory.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.generateMissingFilesToolStripMenuItem,
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem,
-            this.resetVersionFilesToolStripMenuItem});
-            this.contextVersionHistory.Name = "contextVersionHistory";
-            this.contextVersionHistory.Size = new System.Drawing.Size(286, 70);
-            // 
-            // generateMissingFilesToolStripMenuItem
-            // 
-            this.generateMissingFilesToolStripMenuItem.Name = "generateMissingFilesToolStripMenuItem";
-            this.generateMissingFilesToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
-            this.generateMissingFilesToolStripMenuItem.Text = "Generate missing file(s)";
-            this.generateMissingFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_GenerateMissingVersionFiles_Click);
-            // 
-            // replaceNotYetReleasedWithCurrentDateToolStripMenuItem
-            // 
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Name = "replaceNotYetReleasedWithCurrentDateToolStripMenuItem";
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Text = "Replace \'Not yet released\' with current date";
-            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ReplaceNotYetReleasedWithCurrentDate_Click);
-            // 
-            // resetVersionFilesToolStripMenuItem
-            // 
-            this.resetVersionFilesToolStripMenuItem.Name = "resetVersionFilesToolStripMenuItem";
-            this.resetVersionFilesToolStripMenuItem.Size = new System.Drawing.Size(285, 22);
-            this.resetVersionFilesToolStripMenuItem.Text = "Reload version file(s) from disk";
-            this.resetVersionFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ResetVersionFiles_Click);
-            // 
-            // errorProvider1
-            // 
-            this.errorProvider1.ContainerControl = this;
             // 
             // flowLayoutPanel3
             // 
@@ -617,6 +591,40 @@
             this.btnUpdateVersionHistory.UseVisualStyleBackColor = true;
             this.btnUpdateVersionHistory.Click += new System.EventHandler(this.UpdateVersionHistory_Click);
             // 
+            // contextVersionHistory
+            // 
+            this.contextVersionHistory.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.generateMissingFilesToolStripMenuItem,
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem,
+            this.resetVersionFilesToolStripMenuItem});
+            this.contextVersionHistory.Name = "contextVersionHistory";
+            this.contextVersionHistory.Size = new System.Drawing.Size(303, 70);
+            // 
+            // generateMissingFilesToolStripMenuItem
+            // 
+            this.generateMissingFilesToolStripMenuItem.Name = "generateMissingFilesToolStripMenuItem";
+            this.generateMissingFilesToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.generateMissingFilesToolStripMenuItem.Text = "Generate missing file(s)";
+            this.generateMissingFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_GenerateMissingVersionFiles_Click);
+            // 
+            // replaceNotYetReleasedWithCurrentDateToolStripMenuItem
+            // 
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Name = "replaceNotYetReleasedWithCurrentDateToolStripMenuItem";
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Text = "Replace \'Not yet released\' with current date";
+            this.replaceNotYetReleasedWithCurrentDateToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ReplaceNotYetReleasedWithCurrentDate_Click);
+            // 
+            // resetVersionFilesToolStripMenuItem
+            // 
+            this.resetVersionFilesToolStripMenuItem.Name = "resetVersionFilesToolStripMenuItem";
+            this.resetVersionFilesToolStripMenuItem.Size = new System.Drawing.Size(302, 22);
+            this.resetVersionFilesToolStripMenuItem.Text = "Reload version file(s) from disk";
+            this.resetVersionFilesToolStripMenuItem.Click += new System.EventHandler(this.ContextVersionHistory_ResetVersionFiles_Click);
+            // 
+            // errorProvider1
+            // 
+            this.errorProvider1.ContainerControl = this;
+            // 
             // chkShowLogOnExit
             // 
             this.chkShowLogOnExit.AutoSize = true;
@@ -626,6 +634,42 @@
             this.chkShowLogOnExit.TabIndex = 5;
             this.chkShowLogOnExit.Text = "Show log on exit";
             this.chkShowLogOnExit.UseVisualStyleBackColor = true;
+            // 
+            // contextReleaseToSet
+            // 
+            this.contextReleaseToSet.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ContextRelease_SetAllVersionNumbers});
+            this.contextReleaseToSet.Name = "contextVersionNumbers";
+            this.contextReleaseToSet.Size = new System.Drawing.Size(197, 26);
+            // 
+            // ContextRelease_SetAllVersionNumbers
+            // 
+            this.ContextRelease_SetAllVersionNumbers.Name = "ContextRelease_SetAllVersionNumbers";
+            this.ContextRelease_SetAllVersionNumbers.Size = new System.Drawing.Size(196, 22);
+            this.ContextRelease_SetAllVersionNumbers.Text = "Set all version numbers";
+            this.ContextRelease_SetAllVersionNumbers.Click += new System.EventHandler(this.ContextReleases_SetAllVersionNumbers_Click);
+            // 
+            // contextShouldRelease
+            // 
+            this.contextShouldRelease.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItem1,
+            this.toolStripMenuItem2});
+            this.contextShouldRelease.Name = "contextCheckAll";
+            this.contextShouldRelease.Size = new System.Drawing.Size(136, 48);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.toolStripMenuItem1.Text = "Check all";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.ContextReleases_CheckAll_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(152, 22);
+            this.toolStripMenuItem2.Text = "Uncheck all";
+            this.toolStripMenuItem2.Click += new System.EventHandler(this.ContextReleases_UncheckAll_Click);
             // 
             // MyForceReleaserGUI
             // 
@@ -666,9 +710,11 @@
             this.grpBoxCommitMessages.PerformLayout();
             this.grpPreviousVersionHist.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
+            this.flowLayoutPanel3.ResumeLayout(false);
             this.contextVersionHistory.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
-            this.flowLayoutPanel3.ResumeLayout(false);
+            this.contextReleaseToSet.ResumeLayout(false);
+            this.contextShouldRelease.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -728,6 +774,11 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
         private System.Windows.Forms.Button btnUpdateVersionHistory;
         private System.Windows.Forms.CheckBox chkShowLogOnExit;
+        private System.Windows.Forms.ContextMenuStrip contextReleaseToSet;
+        private System.Windows.Forms.ToolStripMenuItem ContextRelease_SetAllVersionNumbers;
+        private System.Windows.Forms.ContextMenuStrip contextShouldRelease;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;
 
     }
 }

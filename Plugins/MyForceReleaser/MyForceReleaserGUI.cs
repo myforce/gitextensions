@@ -35,7 +35,7 @@ namespace MyForceReleaser
             LoadProducts();
 
             tabVersions.Enabled = _Model.Git.IsCurrentBranchMaster() || _Model.Git.IsCurrentBranchVersionBranch();
-            tabReleasing.Enabled = _Model.Git.IsCurrentBranchVersionBranch();
+            tabReleasing.Enabled = _Model.Git.IsCurrentBranchVersionBranch() || _Model.Git.IsCurrentBranchMaster();
             tabVersionHistory.Enabled = !_Model.Git.IsCurrentBranchVersionBranch(); //Enable history on all except version branches! So they can be merged in!
 
             //Open the correct tab
@@ -467,6 +467,22 @@ namespace MyForceReleaser
         }
 
         //Data grid view events
+        private void dataGridViewReleases_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (dataGridViewReleases.Rows.Count <= 0)
+                return; //No use if there are no rows
+
+            if (e.ColumnIndex == dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, 0].ColumnIndex)
+            {
+                if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                    contextReleaseToSet.Show(Cursor.Position);
+            }
+            else if (e.ColumnIndex == dataGridViewReleases[RELEASE_COL_RELEASE, 0].ColumnIndex)
+            {
+                if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                    contextShouldRelease.Show(Cursor.Position);
+            }
+        }
         private void dataGridViewReleases_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex == dataGridViewReleases[RELEASE_COL_RELEASE, e.RowIndex].ColumnIndex)
@@ -478,6 +494,48 @@ namespace MyForceReleaser
                 cell.Value = !(bool)cell.Value;
             }
         }
+        
+        //Context menu actions
+        private void ContextReleases_SetAllVersionNumbers_Click(object sender, EventArgs e)
+        {
+            bool bDone = true, bIsMasterBranch = _Model.Git.IsCurrentBranchMaster();
+            string strVersionToSet = "";
+            Point p = new Point(Cursor.Position.X, Cursor.Position.Y);
+            do
+            {
+                bDone = true;
+                InputBoxResult dlg = InputBox.Show("Please provide a version to set on all projects: ", "Version to set?", "X.X.X.X", p.X, p.Y);
+                if (dlg.ReturnCode == System.Windows.Forms.DialogResult.OK)
+                {
+                    if (string.IsNullOrWhiteSpace(dlg.Text) || !StaticTools.IsValidVersionNumber(dlg.Text, bIsMasterBranch))
+                    {
+                        string strMessage = "Invalid version number! Please respect the format: X.X.X.X where (X = digits)!";
+                        if (bIsMasterBranch)
+                            strMessage += " Note: This is a master branch => You can only release the initial versions X.X.X.0!";
+                        MessageBox.Show(strMessage);
+                        bDone = false;
+                    }
+                    else
+                        strVersionToSet = dlg.Text;
+                }
+            } while (!bDone);
+
+            if (!string.IsNullOrWhiteSpace(strVersionToSet))
+            {
+                for (int index = 0; index < dataGridViewReleases.Rows.Count; index++)
+                    dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, index].Value = strVersionToSet;
+            }
+        }
+        private void ContextReleases_CheckAll_Click(object sender, EventArgs e)
+        {
+            for (int nIndex = 0; nIndex < dataGridViewReleases.Rows.Count; nIndex++)
+                dataGridViewReleases[RELEASE_COL_RELEASE, nIndex].Value = true;
+        }
+        private void ContextReleases_UncheckAll_Click(object sender, EventArgs e)
+        {
+            for (int nIndex = 0; nIndex < dataGridViewReleases.Rows.Count; nIndex++)
+                dataGridViewReleases[RELEASE_COL_RELEASE, nIndex].Value = false;
+        }  
         #endregion
 
         #region VersionHistoryTab
@@ -934,15 +992,17 @@ namespace MyForceReleaser
                 || nColumnIndexRowIdentifier < 0 || nColumnIndexRowIdentifier > gridView.ColumnCount)
                 return false; //During testing this won't even work so should never get released. Hence no warning!
 
-            bool bValid = true;
+            bool bValid = true, bIsMasterBranch = _Model.Git.IsCurrentBranchMaster();
             int nRowIndex = gridView.Rows.Count;
             while (bValid && --nRowIndex >= 0)
-                bValid = StaticTools.IsValidVersionNumber(gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString());
-
+                bValid = StaticTools.IsValidVersionNumber(gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString(), bIsMasterBranch);
+  
             if (!bValid && nRowIndex >= 0 && nRowIndex < gridView.Rows.Count)
             {
                 string strError = "Invalid version number <" + gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString()
                     + "> found for <" + gridView[nColumnIndexRowIdentifier, nRowIndex].Value.ToString() + ">!";
+                if (bIsMasterBranch)
+                    strError += " Note: This is a master branch => you may only create/release the intital X.X.X.0 version tags!";
                 MessageBox.Show(strError);
                 Logger.GetLogger().LogMessage("ValidateVersionNumbersInColumn: " + strError);
             }
