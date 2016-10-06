@@ -76,6 +76,22 @@ namespace MyForceReleaser
                 return false;
             }
 
+            //Verify that no files are changed!
+            string strOutput = Model.Git.RunGitCmd("status -s");
+            if (!string.IsNullOrWhiteSpace(strOutput))
+            {
+                string strMessage = "When you update version history or versions these files will be committed too!";
+                strMessage += System.Environment.NewLine;
+                strMessage += System.Environment.NewLine;
+                strMessage += "Do you wish to continue?";
+                if (MessageBox.Show(strMessage, "Uncommitted/Untracked files found in repo!", MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    Logger.GetLogger().LogMessage("Startup: Uncommitted / Untracked files found in repo! User chose: No");
+                    return false;
+                } else
+                    Logger.GetLogger().LogMessage("Startup: Uncommitted / Untracked files found in repo! User chose: Yes");
+            }
+
             Logger.GetLogger().LogMessage("Startup: Done");
             Logger.GetLogger().LogMessage("Startup: Starting GUI");
             
