@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using GitUIPluginInterfaces;
-using GitCommands.Settings;
+﻿using GitCommands.Settings;
 
 namespace GitUI.CommandsDialogs.SettingsDialog.Pages
 {
-    public partial class DetailedSettingsPage : AutoLayoutSettingsPage
+    public partial class DetailedSettingsPage : RepoDistSettingsPage
     {
         public DetailedSettingsPage()
         {
@@ -20,26 +11,24 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
             Translate();
         }
 
-        protected override void Init(ISettingsPageHost aPageHost)
-        {
-            base.Init(aPageHost);
-            CreateSettingsControls();
-            Translate();
-        }
-
         private DetailedGroup DetailedSettings
         {
             get
             {
-                return RepoDistSettingsSet.RepoDistSettings.Detailed;
+                return CurrentSettings.Detailed;
             }
         }
 
-        private void CreateSettingsControls()
+        protected override void SettingsToPage()
         {
-            GroupBoxSettingsLayout main = new GroupBoxSettingsLayout(this, "Browse repository window");
-            AddSettingsLayout(main);
-            main.AddBoolSetting("Show the Console tab", DetailedSettings.ShowConEmuTab);
+            chkChowConsoleTab.SetNullableChecked(DetailedSettings.ShowConEmuTab.Value);
+            chkRemotesFromServer.SetNullableChecked(DetailedSettings.GetRemoteBranchesDirectlyFromRemote.Value);
+        }
+
+        protected override void PageToSettings()
+        {
+            DetailedSettings.ShowConEmuTab.Value = chkChowConsoleTab.GetNullableChecked();
+            DetailedSettings.GetRemoteBranchesDirectlyFromRemote.Value = chkRemotesFromServer.GetNullableChecked();
         }
 
         public static SettingsPageReference GetPageReference()
