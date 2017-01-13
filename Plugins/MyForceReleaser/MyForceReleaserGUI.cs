@@ -145,7 +145,9 @@ namespace MyForceReleaser
                 return; //No use to update rows
             }
 
-            if (!ValidateVersionNumbersInColumn(ref dataGridViewProducts, dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, 0].ColumnIndex))
+            if (!ValidateVersionNumbersInColumn(ref dataGridViewProducts, 
+                dataGridViewProducts[PRODUCTS_COL_VERSIONTOSET, 0].ColumnIndex, 
+                dataGridViewProducts[PRODUCTS_COL_UPDATEVERSION, 0].ColumnIndex))
             {
                 Logger.GetLogger().LogMessage("UpdateVersionNumbers: End");
                 return;
@@ -355,7 +357,9 @@ namespace MyForceReleaser
 
             bool ProductsFoundToRelease = false;
 
-            if (!ValidateVersionNumbersInColumn(ref dataGridViewReleases, dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, 0].ColumnIndex))
+            if (!ValidateVersionNumbersInColumn(ref dataGridViewReleases,
+                dataGridViewReleases[RELEASE_COL_VERSIONTORELEASE, 0].ColumnIndex,
+                dataGridViewReleases[RELEASE_COL_RELEASE, 0].ColumnIndex))
             {
                 Logger.GetLogger().LogMessage("ReleasePrograms: End");
                 return;
@@ -986,16 +990,19 @@ namespace MyForceReleaser
             dataGridViewVersionHist.SelectionChanged += dataGridViewVersionHist_SelectionChanged;
             SyncVersionHistory(true);
         }
-        private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, int nColumnIndexVersionToCheck, int nColumnIndexRowIdentifier = 0)
+        private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, 
+            int nColumnIndexVersionToCheck, int nColumnIndexEnabled, int nColumnIndexRowIdentifier = 0)
         {
             if (nColumnIndexVersionToCheck < 0 || nColumnIndexVersionToCheck > gridView.ColumnCount
-                || nColumnIndexRowIdentifier < 0 || nColumnIndexRowIdentifier > gridView.ColumnCount)
+                || nColumnIndexRowIdentifier < 0 || nColumnIndexRowIdentifier > gridView.ColumnCount
+                || nColumnIndexEnabled < 0 || nColumnIndexEnabled > gridView.ColumnCount)
                 return false; //During testing this won't even work so should never get released. Hence no warning!
 
             bool bValid = true, bIsMasterBranch = _Model.Git.IsCurrentBranchMaster();
             int nRowIndex = gridView.Rows.Count;
             while (bValid && --nRowIndex >= 0)
-                bValid = StaticTools.IsValidVersionNumber(gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString(), bIsMasterBranch);
+                if ((bool)gridView[nColumnIndexEnabled, nRowIndex].Value)
+                    bValid = StaticTools.IsValidVersionNumber(gridView[nColumnIndexVersionToCheck, nRowIndex].Value.ToString(), bIsMasterBranch);
   
             if (!bValid && nRowIndex >= 0 && nRowIndex < gridView.Rows.Count)
             {
