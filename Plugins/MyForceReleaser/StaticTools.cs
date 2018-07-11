@@ -288,7 +288,7 @@ namespace MyForceReleaser
         }
         public static bool IsValidVersionNumber(string strVersionNumber, bool bOnlyRelease = false)
         {
-            return bOnlyRelease ? System.Text.RegularExpressions.Regex.Match(strVersionNumber, @"^(?:\d+\.){3}0+$").Success : System.Text.RegularExpressions.Regex.Match(strVersionNumber, @"^(?:\d+\.){3}\d+$").Success;
+            return bOnlyRelease ? System.Text.RegularExpressions.Regex.Match(strVersionNumber, @"^(?:\d+\.)+0$").Success : System.Text.RegularExpressions.Regex.Match(strVersionNumber, @"^(?:\d+\.)+\d+$").Success;
         }
         public static string GetMainTrackVersionNumber(string strVersionNumber, int nDigits = 3)
         {
