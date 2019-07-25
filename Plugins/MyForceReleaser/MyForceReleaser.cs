@@ -184,13 +184,13 @@ namespace MyForceReleaser
 
         #region Files
         //Files that should be available in the "Internal" repository
-        public static readonly string FILE_INTERNAL_VALIDPRODUCTS = "ValidProducts.ps1";
+        public static readonly string FILE_INTERNAL_VALIDPROJECTS = "ValidProjects.ps1";
         public static readonly string FILE_INTERNAL_CHANGEVERSIONS = "ChangeVersions.ps1";
         public static readonly string FILE_INTERNAL_CREATETAG = "CreateTag.ps1";
         public static Dictionary<string, string> FILELIST_INTERNAL = new Dictionary<string, string>
             {                
                 { FILE_INTERNAL_CREATETAG, @"BuildScripts\SanityChecks\CreateTag.ps1" }
-                , { FILE_INTERNAL_VALIDPRODUCTS, @"BuildScripts\SanityChecks\ValidProducts.ps1" }
+                , { FILE_INTERNAL_VALIDPROJECTS, @"BuildScripts\SanityChecks\ValidProjects.ps1" }
                 , { FILE_INTERNAL_CHANGEVERSIONS, @"UsefulScripts\ChangeVersions.ps1" }
             };
 
@@ -300,43 +300,74 @@ namespace MyForceReleaser
                 SqlFilePerProduct.Add(item.Key, item.Value);
         }
 
-        private static Dictionary<string, List<string>> _LoadValidProducts = new Dictionary<string, List<string>>();
-        public static Dictionary<string, List<string>> LoadValidProducts(MyForceReleaser _Model)
+        private static Dictionary<string, Dictionary<string, List<string>>> _CachedValidProgramsPerTrackPerProject = new Dictionary<string, Dictionary<string, List<string>>>();
+
+        public static Dictionary<string, Dictionary<string, List<string>>> LoadValidProgramsPerTrackPerProject(MyForceReleaser _Model)
         {
-            if (!IsUseCache || _LoadValidProducts.Count <= 0)
+            if (!IsUseCache || _CachedValidProgramsPerTrackPerProject.Count <= 0)
             {
-                _LoadValidProducts.Clear();
+                _CachedValidProgramsPerTrackPerProject.Clear();
 
                 // Create a runspace to host the PowerScript environment:
                 Runspace runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
                 runspace.Open();
+
                 // Using the runspace, create a new pipeline for your cmdlets:
                 Pipeline pipeline = runspace.CreatePipeline();
 
-                string cmd = System.IO.Path.Combine(_Model.InternalRepositoryPath, FILELIST_INTERNAL[FILE_INTERNAL_VALIDPRODUCTS]);
+                // Load ValidProjects.ps1 
+                string cmd = System.IO.Path.Combine(_Model.InternalRepositoryPath, FILELIST_INTERNAL[FILE_INTERNAL_VALIDPROJECTS]);
                 if (System.IO.File.Exists(cmd))
                 {
                     pipeline.Commands.AddScript("& \"" + cmd + "\"");
                     ICollection<PSObject> collection = pipeline.Invoke();
 
-                    System.Collections.Hashtable psValidProducts = (System.Collections.Hashtable)runspace.SessionStateProxy.GetVariable("global:ValidProducts");
-                    if (psValidProducts != null)
+                    System.Collections.Hashtable psValidProjects = (System.Collections.Hashtable)runspace.SessionStateProxy.GetVariable("global:ValidProjects");
+                    if (psValidProjects != null)
                     {
-                        foreach (var Repo in psValidProducts.Keys)
-                        {
-                            //Add key
-                            _LoadValidProducts.Add(Repo.ToString(), new List<string>());
 
-                            //Add values
-                            object[] Products = (object[])psValidProducts[Repo];
-                            foreach (var Product in Products)
-                                _LoadValidProducts[Repo.ToString()].Add(Product.ToString());
+                        foreach (System.Collections.DictionaryEntry psProjectEntry in psValidProjects)
+                        {
+                            var projectName = (string)psProjectEntry.Key;
+                            var projectSettings = (System.Collections.Hashtable)psProjectEntry.Value;
+                            var projectValidTracks = ((System.Collections.Hashtable)projectSettings["ValidTracks"]).Keys.Cast<string>().OrderBy(p => System.Version.Parse(p));
+                            var projectPrograms = ((System.Collections.Hashtable)projectSettings["Programs"]);
+
+                            Dictionary<string, List<string>> validProgramsPerTrack = new Dictionary<string, List<string>>();
+                            foreach (var psValidTrack in projectValidTracks)
+                            {
+                                var track = System.Version.Parse(psValidTrack);
+                                var validProgramsForTrack = new List<string>();
+
+                                foreach (System.Collections.DictionaryEntry psProgramEntry in projectPrograms)
+                                {
+                                    var programName = (string)psProgramEntry.Key;
+                                    var programSettings = (System.Collections.Hashtable)psProgramEntry.Value;
+
+                                    System.Version minTrack, maxTrack;
+                                    if (!System.Version.TryParse((string)programSettings["MinTrack"], out minTrack))
+                                        minTrack = null;
+                                    if (!System.Version.TryParse((string)programSettings["MaxTrack"], out maxTrack))
+                                        maxTrack = null;
+
+                                    if ((minTrack == null || minTrack <= track) && (maxTrack == null || track <= maxTrack))
+                                        validProgramsForTrack.Add(programName);
+                                }
+
+                                validProgramsPerTrack.Add(psValidTrack, validProgramsForTrack.OrderBy(s => s).ToList());
+                            }
+
+                            //validProgramsPerTrack.Add(psValidTrack, )
+                            _CachedValidProgramsPerTrackPerProject.Add(projectName, validProgramsPerTrack);// projectPrograms.OrderBy(p => p).ToList());
                         }
+
                     }
                 }
+
                 runspace.Close();
             }
-            return _LoadValidProducts;
+
+            return _CachedValidProgramsPerTrackPerProject;
         }
         public static Dictionary<string, List<string>> LoadResourceFilesForValidProducts(MyForceReleaser _Model)
         {
@@ -367,61 +398,73 @@ namespace MyForceReleaser
         public static string GetTags(MyForceReleaser _Model)
         {
             if (!IsUseCache || string.IsNullOrWhiteSpace(_GetTags))
-                _GetTags = _Model.Git.RunGitCmd("ls-remote");
+                _GetTags = _Model.Git.RunGitCmd("ls-remote --tags --quiet");
             return _GetTags;
         }
 
-        private static string _GetRepoName;
-        public static string GetRepoName(MyForceReleaser _Model, ref string strErrors)
+        private static string _CachedProjectName;
+
+        public static string GetProjectName(MyForceReleaser _Model, ref string strErrors)
         {
-            if (!IsUseCache || string.IsNullOrWhiteSpace(_GetRepoName))
+            if (!IsUseCache || string.IsNullOrWhiteSpace(_CachedProjectName))
             {
-                string originURL = _Model.Git.RunGitCmd("remote get-url origin");
-                Regex regex = new Regex(@"^.*?([^/]+)$");
-                Match match = regex.Match(originURL);
-                if (!match.Success || match.Groups.Count < 2)
+                // Create a runspace to host the PowerScript environment:
+                Runspace runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
+                runspace.Open();
+
+                // Using the runspace, create a new pipeline for your cmdlets:
+                Pipeline pipeline = runspace.CreatePipeline();
+
+                // Load ValidProjects.ps1 
+                string cmd = System.IO.Path.Combine(_Model.InternalRepositoryPath, FILELIST_INTERNAL[FILE_INTERNAL_VALIDPROJECTS]);
+                if (System.IO.File.Exists(cmd))
                 {
-                    strErrors = string.Format("Unable to parse repo name from: {0}", originURL);
-                    return "";
+                    pipeline.Commands.AddScript("cd \"" + _Model.Git.GetWorkingDir() + "\"");
+                    pipeline.Commands.AddScript(".\"" + cmd + "\"");
+                    pipeline.Commands.AddScript("Get-CurrentProject");
+                    ICollection<PSObject> collection = pipeline.Invoke();
+
+                    _CachedProjectName = collection?.FirstOrDefault()?.ToString();
                 }
-                _GetRepoName = "";
-                try
-                {
-                    _GetRepoName = System.IO.Path.GetFileNameWithoutExtension(match.Groups[1].Value.Trim());
-                }
-                catch (Exception ex)
-                {
-                    strErrors = ex.Message;
-                    return "";
-                }
+
+                runspace.Close();
             }
-            return _GetRepoName;
+
+            return _CachedProjectName;
         }
 
         private static Dictionary<string, List<KeyValuePair<string, bool>>> _GetLatestVersionNumbersForAllProducts = new Dictionary<string, List<KeyValuePair<string, bool>>>();
-        public static bool GetLatestVersionNumbersForAllProducts(MyForceReleaser _Model, ref Dictionary<string, List<KeyValuePair<string, bool>>> dicToFill, ref string strErrorsAndWarnings)
+        public static bool GetLatestVersionNumbersForAllProducts(MyForceReleaser _Model, string strAllTags, ref Dictionary<string, List<KeyValuePair<string, bool>>> dicToFill, ref string strErrorsAndWarnings)
         {
             if (!IsUseCache || _GetLatestVersionNumbersForAllProducts.Count <= 0)
             {
                 _GetLatestVersionNumbersForAllProducts.Clear();
 
-                //Determine the repo name from the remote URL (Eg: Bison, ContactCentre, ...
-                string repoName = MyForceReleaser.GetRepoName(_Model, ref strErrorsAndWarnings);
+                //Determine the project name from the repository (eg: Bison, ContactCentre, ...)
+                string projectName = MyForceReleaser.GetProjectName(_Model, ref strErrorsAndWarnings);
                 if (!string.IsNullOrWhiteSpace(strErrorsAndWarnings))
                     return false;
 
                 //Load the valid products from the internal repo
-                var ValidProducts = MyForceReleaser.LoadValidProducts(_Model);
-                if (ValidProducts.Count <= 0)
+                var validProgramsPerTrackPerProject = MyForceReleaser.LoadValidProgramsPerTrackPerProject(_Model);
+                if (validProgramsPerTrackPerProject.Count <= 0)
                 {
-                    strErrorsAndWarnings = string.Format("Unable to load ValidProducts from the internal repo! Please verify the file (internal repo): <{0}>", MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_VALIDPRODUCTS]);
+                    strErrorsAndWarnings = string.Format("Unable to load valid programs from the internal repo! Please verify the file (internal repo): <{0}>", MyForceReleaser.FILELIST_INTERNAL[MyForceReleaser.FILE_INTERNAL_VALIDPROJECTS]);
                     return false;
                 }
-                if (!ValidProducts.ContainsKey(repoName))
+                if (!validProgramsPerTrackPerProject.ContainsKey(projectName))
                 {
-                    strErrorsAndWarnings = string.Format("Repository: <{0}> not found in the list of valid products!", repoName);
+                    strErrorsAndWarnings = string.Format("Project <{0}> not found in the list of valid projects!", projectName);
                     return false;
                 }
+                var validProgramsPerTrack = validProgramsPerTrackPerProject[projectName];
+                var track = _Model.Git.GetCurrentBranchVersion();
+                if (!validProgramsPerTrack.ContainsKey(track))
+                {
+                    strErrorsAndWarnings = string.Format("Track <{0}> not found in the list of valid tracks for project {1}!", track, projectName);
+                    return false;
+                }
+                var validPrograms = validProgramsPerTrack[track];
 
                 //Load the resource files for each valid product
                 Dictionary<string, List<string>> dicResourceFiles = new Dictionary<string, List<string>>();
@@ -430,19 +473,17 @@ namespace MyForceReleaser
                 if (dicResourceFiles.Count <= 0 && dicSqlFiles.Count <= 0)
                     strErrorsAndWarnings = string.Format("Unable to load resource files for this repo! Please verify the file (current repo): <{0}>{1}", MyForceReleaser.FILELIST_REPO[MyForceReleaser.FILE_REPO_MAPPRODUCTNAMESTORESOURCEFILES], System.Environment.NewLine);
 
-                //Load all available tags
-                string strAllTags = MyForceReleaser.GetTags(_Model);
-
                 //Fill the dictionary
-                foreach (var ProductName in ValidProducts[repoName])
+                string strRemoteBranch = null;
+                foreach (var programName in validPrograms)
                 {
                     bool bRetrievedFromTag = false;
                     Dictionary<string, string> dicTrackMaxVersion = new Dictionary<string, string>();
 
                     //Check if there are any regular resource files where we can get versions from
-                    if (dicResourceFiles.ContainsKey(ProductName) && dicResourceFiles[ProductName].Count > 0)
+                    if (dicResourceFiles.ContainsKey(programName) && dicResourceFiles[programName].Count > 0)
                     {
-                        string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicResourceFiles[ProductName][0]);
+                        string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicResourceFiles[programName][0]);
                         string strCurrentVersion = "";
                         if (FilePath.ToLower().EndsWith(".rc"))
                         {
@@ -459,9 +500,9 @@ namespace MyForceReleaser
                     else
                     {
                         //No regular resource files... Maybe sql files with versions in it ?
-                        if (dicSqlFiles.ContainsKey(ProductName))
+                        if (dicSqlFiles.ContainsKey(programName))
                         {
-                            string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicSqlFiles[ProductName][0]);
+                            string FilePath = System.IO.Path.Combine(_Model.Git.GetWorkingDir(), dicSqlFiles[programName][0]);
                             string strCurrentVersion = StaticTools.FindInFile(FilePath, @"((?:\d+\.){3}\d+)", 1).Replace(',', '.');
                             dicTrackMaxVersion.Add(StaticTools.GetMainTrackVersionNumber(strCurrentVersion), strCurrentVersion);
                         }
@@ -469,12 +510,17 @@ namespace MyForceReleaser
                         {
                             //No resource or SQL => We use the version from the previous tag
                             bRetrievedFromTag = true;
-                            string strRemoteBranch = MyForceReleaser.GetRemoteBranchName(_Model);
+                            if (strRemoteBranch == null)
+                            {
+                                strRemoteBranch = MyForceReleaser.GetRemoteBranchName(_Model);
+                                if (strRemoteBranch == null)
+                                    strRemoteBranch = "";
+                            }
                             if (!string.IsNullOrWhiteSpace(strRemoteBranch))
                             {
                                 //Parse version from the current branch                            
                                 bool bSpecificVersionFound = strRemoteBranch.Contains("Version-");
-                                string strRemoteVersion = "";
+                                string strRemoteVersion;
                                 if (bSpecificVersionFound)
                                     strRemoteVersion = strRemoteBranch.Replace("Version-", "") + "."; //Find specific track version number
                                 else
@@ -482,9 +528,9 @@ namespace MyForceReleaser
 
                                 //If we don't have a specific version warn the user we aren't working on specific version!
                                 if (!bSpecificVersionFound)
-                                    strErrorsAndWarnings += string.Format("No version found for product <{0}> for branch <{1}>! Please be sure this is intended!{2}", ProductName, strRemoteBranch, System.Environment.NewLine);
+                                    strErrorsAndWarnings += string.Format("No version found for product <{0}> for branch <{1}>! Please be sure this is intended!{2}", programName, strRemoteBranch, System.Environment.NewLine);
 
-                                var matches = Regex.Matches(strAllTags, "refs/tags/" + ProductName + "-v?(" + strRemoteVersion + @"\d+)\^{}");
+                                var matches = Regex.Matches(strAllTags, "refs/tags/" + programName + "-v?(" + strRemoteVersion + @"\d+)\^{}");
                                 foreach (Match tagmatch in matches)
                                 {
                                     string strCurrentTagMatch = "";
@@ -511,9 +557,9 @@ namespace MyForceReleaser
                         string versionNumber = strActualVersion.Value;
                         if (StaticTools.IsValidVersionNumber(versionNumber))
                         {
-                            if (!_GetLatestVersionNumbersForAllProducts.ContainsKey(ProductName))
-                                _GetLatestVersionNumbersForAllProducts.Add(ProductName, new List<KeyValuePair<string, bool>>());
-                            _GetLatestVersionNumbersForAllProducts[ProductName].Add(new KeyValuePair<string, bool>(versionNumber, bRetrievedFromTag));
+                            if (!_GetLatestVersionNumbersForAllProducts.ContainsKey(programName))
+                                _GetLatestVersionNumbersForAllProducts.Add(programName, new List<KeyValuePair<string, bool>>());
+                            _GetLatestVersionNumbersForAllProducts[programName].Add(new KeyValuePair<string, bool>(versionNumber, bRetrievedFromTag));
                         }
                     }
                 }

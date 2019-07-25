@@ -933,7 +933,7 @@ namespace MyForceReleaser
             //Fill the grids
             string strErrors = "";
             Dictionary<string, List<KeyValuePair<string, bool>>> dicProductsToMaxVersionPerTrack = new Dictionary<string,List<KeyValuePair<string,bool>>>();
-            bool bSucces = MyForceReleaser.GetLatestVersionNumbersForAllProducts(_Model, ref dicProductsToMaxVersionPerTrack, ref strErrors);
+            bool bSucces = MyForceReleaser.GetLatestVersionNumbersForAllProducts(_Model, strAllTags, ref dicProductsToMaxVersionPerTrack, ref strErrors);
             if (!string.IsNullOrWhiteSpace(strErrors))
                 MessageBox.Show(strErrors);
 
@@ -987,9 +987,11 @@ namespace MyForceReleaser
                         MessageBox.Show("Couldn't determine any version for <" + ProductName + ">. Releasing will work but not for this product!");
                 }
             }
+
             dataGridViewVersionHist.SelectionChanged += dataGridViewVersionHist_SelectionChanged;
             SyncVersionHistory(true);
         }
+
         private bool ValidateVersionNumbersInColumn(ref DataGridView gridView, 
             int nColumnIndexVersionToCheck, int nColumnIndexEnabled, int nColumnIndexRowIdentifier = 0)
         {

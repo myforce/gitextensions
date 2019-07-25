@@ -11,6 +11,7 @@ namespace MyForceReleaser
         bool IsCurrentBranchMaster();
         bool IsCurrentBranchFixBranch();
         bool IsCurrentBranchVersionBranch();
+        string GetCurrentBranchVersion();
         string GetWorkingDir();
         string RunGitCmd(string strCMD);
     }

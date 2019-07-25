@@ -11,7 +11,7 @@ namespace MyForceReleaser
         private IGitModule _Git { get; set; }
         private bool _Cached { get; set; }
 
-        private enum CacheElement { BranchName, WorkingDir, IsMasterBranch, IsFixBranch, IsVersionBranch }
+        private enum CacheElement { BranchName, WorkingDir, IsMasterBranch, IsFixBranch, IsVersionBranch, BranchVersion }
         private Dictionary<CacheElement, object> _Chache;
         private delegate object Retriever();
         private T GetItemFromCache<T>(CacheElement element, Retriever ret)
@@ -87,11 +87,26 @@ namespace MyForceReleaser
         public bool IsCurrentBranchVersionBranch()
         {
             return GetItemFromCache<bool>(CacheElement.IsVersionBranch,
-               delegate()
+               delegate ()
                {
                    string strCurrentBranchName = GetCurrentBranchName();
                    return !string.IsNullOrWhiteSpace(strCurrentBranchName)
                        && System.Text.RegularExpressions.Regex.Match(strCurrentBranchName, @"version-(\d+\.)+\d+", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Success;
+               });
+        }
+
+        public string GetCurrentBranchVersion()
+        {
+            return GetItemFromCache<string>(CacheElement.BranchVersion,
+               delegate ()
+               {
+                   string strCurrentBranchName = GetCurrentBranchName();
+                   if (string.IsNullOrWhiteSpace(strCurrentBranchName))
+                       return null;
+                   var match = System.Text.RegularExpressions.Regex.Match(strCurrentBranchName, @"(?:version|fix)-((?:\d+\.)+\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                   if (match == null || !match.Success)
+                       return null;
+                   return match.Groups[1].Value;
                });
         }
     }
